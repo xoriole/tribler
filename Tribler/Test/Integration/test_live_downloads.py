@@ -257,6 +257,32 @@ class TriblerDownloadTest(AbstractTriblerIntegrationTest):
         subplot.legend()
         figure.savefig(output_file + '.png', bbox_inches='tight')
 
+        # Plot resource (CPU & Memory) graph
+        resource_file = os.path.join(state_dir, "logs", "resources.log")
+        resource_data = numpy.genfromtxt(resource_file, delimiter=',', skip_header=0,
+                                skip_footer=0, names=['time', 'memory', 'cpu'])
+        memory_figure = plot.figure()
+        cpu_figure = plot.figure()
+
+        memory_subplot = memory_figure.add_subplot(111)
+        cpu_subplot = cpu_figure.add_subplot(111)
+
+        memory_subplot.set_title("Live Memory usage plot")
+        cpu_subplot.set_title("Live CPU usage plot")
+        memory_subplot.set_xlabel('Time (seconds)')
+        cpu_subplot.set_xlabel('Time (seconds)')
+        memory_subplot.set_ylabel('Memory (MB)')
+        cpu_subplot.set_ylabel('CPU (%)')
+
+        memory_subplot.plot(resource_data['time'], resource_data['memory'], color='b', label='Memory (MB)')
+        cpu_subplot.plot(resource_data['time'], resource_data['cpu'], color='b', label='CPU (%)')
+
+        memory_subplot.legend()
+        cpu_subplot.legend()
+
+        memory_figure.savefig(resource_file + '.memory.png', bbox_inches='tight')
+        cpu_figure.savefig(resource_file + '.cpu.png', bbox_inches='tight')
+
 
 if __name__ == "__main__":
     unittest.main()
