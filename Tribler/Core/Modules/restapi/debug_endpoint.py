@@ -8,6 +8,7 @@ import psutil
 from meliae import scanner
 from twisted.web import http, resource
 
+from Tribler.Core.Modules.restapi.shell_endpoint import ShellEndpoint
 from Tribler.Core.Utilities.instrumentation import WatchDog
 import Tribler.Core.Utilities.json_util as json
 
@@ -33,7 +34,8 @@ class DebugEndpoint(resource.Resource):
         child_handler_dict = {"circuits": DebugCircuitsEndpoint, "open_files": DebugOpenFilesEndpoint,
                               "open_sockets": DebugOpenSocketsEndpoint, "threads": DebugThreadsEndpoint,
                               "cpu": DebugCPUEndpoint, "memory": DebugMemoryEndpoint,
-                              "log": DebugLogEndpoint, "profiler": DebugProfilerEndpoint}
+                              "log": DebugLogEndpoint, "profiler": DebugProfilerEndpoint,
+                              "shell": ShellEndpoint}
 
         for path, child_cls in child_handler_dict.iteritems():
             self.putChild(path, child_cls(session))

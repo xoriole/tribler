@@ -1,11 +1,12 @@
 import os
 import socket
+import urllib
 from time import localtime, strftime
 
 import datetime
 import matplotlib
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor, QFontMetrics
 from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDesktopWidget
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QSizePolicy
@@ -151,12 +152,47 @@ class DebugWindow(QMainWindow):
         self.window().log_refresh_button.clicked.connect(lambda: self.load_logs_tab())
         self.window().log_tab_widget.currentChanged.connect(lambda index: self.load_logs_tab())
 
+        # Tribler Shell
+        fontWidth = QFontMetrics(self.window().shell_input_text.currentCharFormat().font()).averageCharWidth()
+        self.window().shell_input_text.setTabStopWidth(3 * fontWidth)
+        self.window().core_shell_display_area.setTabStopWidth(3 * fontWidth)
+        self.window().shell_execute_button.clicked.connect(lambda: self.execute_shell())
+        self.window().shell_output_clear_button.clicked.connect(lambda: self.clear_shell())
+
         # Position to center
         frame_geometry = self.frameGeometry()
         screen = QDesktopWidget().screenNumber(QDesktopWidget().cursor().pos())
         center_point = QDesktopWidget().screenGeometry(screen).center()
         frame_geometry.moveCenter(center_point)
         self.move(frame_geometry.topLeft())
+
+    def on_shell_result(self, result):
+        if not result:
+            return
+
+        if 'stdout' in result and result['stdout']:
+            map(lambda line: self.window().core_shell_display_area.append("<font color=\"Green\">"+line+ "</font>"),
+                result['stdout'].rstrip().split('\n'))
+        if 'stderr' in result and result['stderr']:
+            map(lambda line: self.window().core_shell_display_area.append("<font color=\"Red\">" + line + "</font>"),
+                result['stderr'].rstrip().split('\n'))
+        if 'output' in result and result['output']:
+            map(lambda line: self.window().core_shell_display_area.append("<font color=\"Blue\">" + line + "</font>"),
+                result['output'].rstrip().split('\n'))
+
+    def execute_shell(self):
+        self.window().core_shell_display_area.append("<font color=\"Black\"><i>" + "="*120 + "<i></font>")
+        code = self.window().shell_input_text.toPlainText()
+        map(lambda line: self.window().core_shell_display_area.append("<i>&gt;&gt;&gt; " + line + "<i>"),
+            list(map(lambda split: split.replace('\t', '&nbsp;&nbsp;'), code.split('\n'))))
+
+        if code:
+            post_data = "code=%s" % urllib.quote_plus(code.strip().encode('utf-8'))
+            self.request_mgr = TriblerRequestManager()
+            self.request_mgr.perform_request("debug/shell", self.on_shell_result, data=post_data, method='POST')
+
+    def clear_shell(self):
+        self.window().core_shell_display_area.setText("")
 
     def tab_changed(self, index):
         if index == 0:
