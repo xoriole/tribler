@@ -1,6 +1,7 @@
 """
 This twistd plugin enables to start Tribler headless using the twistd command.
 """
+import requests
 from socket import inet_aton
 from datetime import date
 import os
@@ -17,6 +18,8 @@ from twisted.python import usage
 from twisted.python.log import msg
 from zope.interface import implements
 
+from bs4 import BeautifulSoup
+
 from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
@@ -26,7 +29,12 @@ from Tribler.community.allchannel.community import AllChannelCommunity
 from Tribler.community.search.community import SearchCommunity
 from Tribler.dispersy.utils import twistd_yappi
 
-DOWNLOAD_LIMIT = 25 * 1024 * 1024
+LOG_TIME = 1
+GATE_DOWNLOAD_LIMIT = 25 * 1024 * 1024 # 25MB
+GATE_DOWNLOAD_TIME = 3 * 60 # 3 mins to download gate download amount
+WAIT_TIME = 3 * 60 # 3 min
+GATE_THRESHOLD = 1 * 1024 * 1024
+MAX_FULL_DOWNLOADS = 10
 
 
 def check_ipv8_bootstrap_override(val):
@@ -56,7 +64,8 @@ class Options(usage.Options):
         ["ipv8_bootstrap_override", "b", None, "Force the usage of specific IPv8 bootstrap server (ip:port)",
          check_ipv8_bootstrap_override],
         ["input_filename", "f", None, "File containing magnet links", str],
-        ["output_filename", "o", None, "Output file", str]
+        ["output_filename", "o", None, "Output file", str],
+        ["url", "u", '', "url", str]
     ]
     optFlags = [
         ["auto-join-channel", "a", "Automatically join a channel when discovered"],
@@ -80,6 +89,11 @@ class TriblerDownloaderServiceMaker(object):
         self.process_checker = None
         self.download_loop = None
         self.output_file = None
+        self.magnets = []
+        self.torrent_last_added = None
+        self.url = None
+        self.torrent_index = 0
+        self.full_download_count = 0
 
     def log_incoming_remote_search(self, sock_addr, keywords):
         d = date.today()
@@ -143,6 +157,11 @@ class TriblerDownloaderServiceMaker(object):
         if "testnet" in options and options["testnet"]:
             config.set_testnet(True)
 
+        if "url" not in options or not options["url"]:
+            msg("No url found")
+        else:
+            self.url = options["url"]
+
         input_filename = None
         if options["input_filename"]:
             input_filename = options["input_filename"]
@@ -150,6 +169,8 @@ class TriblerDownloaderServiceMaker(object):
         output_filename = "output.csv"
         if options["output_filename"]:
             output_filename = options["output_filename"]
+        #Add timestamp prefix to output file
+        output_filename = "%s.%s" % (int(time.time()), output_filename)
 
         config.set_libtorrent_enabled(True)
         config.set_trustchain_enabled(True)
@@ -161,24 +182,24 @@ class TriblerDownloaderServiceMaker(object):
         msg("Tribler started")
         msg("state directory:", config.get_state_dir())
 
+        self.magnets = []
         # If magnet file in provided
         if input_filename and os.path.exists(input_filename):
-            magnets = []
             with open(input_filename, 'r') as file:
-                magnets = file.readlines()
-                msg("lines:%s" % magnets)
-
-            for magnet in magnets:
-                msg("Initiated downloading %s" % magnet)
-                self.session.start_download_from_uri(magnet)
-
-            self.output_file = open(output_filename, 'a')
-
-            self.download_loop = LoopingCall(self.start_mining)
-            self.download_loop.start(5, now=True)
-
+                self.magnets = file.readlines()
+                msg("Num of magnets:%s" % len(self.magnets))
+        elif self.url:
+            self.magnets = self.crawl_torrents(self.url)
+            msg("Num of magnets craweled:%s" % len(self.magnets))
         else:
-            msg("No input file provided")
+            msg("No input file or url is provided")
+
+        # Add first batch of torrents
+        self.add_new_torrents()
+
+        self.output_file = open(output_filename, 'a')
+        self.download_loop = LoopingCall(self.start_mining)
+        self.download_loop.start(LOG_TIME, now=True)
 
         if "auto-join-channel" in options and options["auto-join-channel"]:
             msg("Enabling auto-joining of channels")
@@ -194,6 +215,7 @@ class TriblerDownloaderServiceMaker(object):
 
     def start_mining(self):
         msg("=" * 80)
+
         torrent_items = self.session.lm.ltmgr.torrents.iteritems()
         for infohash, (torrentdl, handle) in torrent_items:
             lt_status = torrentdl.get_state().lt_status
@@ -209,10 +231,72 @@ class TriblerDownloaderServiceMaker(object):
 
             msg(output)
 
-            if downloaded > DOWNLOAD_LIMIT:
-                torrentdl.set_upload_mode(True)
+            if torrentdl.mining_state == 1:
+                if downloaded > GATE_DOWNLOAD_LIMIT:
+                    torrentdl.set_upload_mode(True)
+                    torrentdl.set_upload_start_time(timestamp)
+                    torrentdl.mining_state = 2
+                else:
+                    diff = time.time() - torrentdl.add_time
+                    if diff > GATE_DOWNLOAD_TIME:
+                        msg("[%s] Too slow torrent; downloaded: %s in %s seconds" % (infohash, downloaded, diff))
+                        torrentdl.stop_remove(removestate=False, removecontent=False)
+
+            elif torrentdl.mining_state == 2:
+                if upload_mode:
+                    diff = timestamp - torrentdl.get_upload_start_time()
+                    if diff > WAIT_TIME:
+                        if uploaded < GATE_THRESHOLD:
+                            msg("[%s] Too low upload; uploaded: %s in %s seconds" % (infohash, downloaded, diff))
+                            torrentdl.stop_remove(removestate=False, removecontent=False)
+                        else:
+                            if self.full_download_count < MAX_FULL_DOWNLOADS:
+                                torrentdl.set_upload_mode(False)
+                                torrentdl.mining_state = 3
+                                self.full_download_count += 1
+                            # Else, do nothing
+                            # We are already downloading the max number of full torrents,
+                            # Just let the torrent stay in upload mode
+            elif torrentdl.mining_state == 3:
+                if torrentdl.get_state().get_progress() == 1:
+                    torrentdl.mining_state = 4
+                    torrentdl.set_upload_mode(True)
+
+        # Add new batch of torrents
+        if time.time() - self.torrent_last_added > WAIT_TIME:
+            self.add_new_torrents()
 
         msg("=" * 80)
+
+    def crawl_torrents(self, base_url):
+        torrent_set = []
+
+        for i in xrange(1):
+            webpage_url = "%s/%s" % (base_url, i)
+
+            request = requests.get(webpage_url)
+            html_content = request.text
+            soup = BeautifulSoup(html_content, "html.parser")
+
+            for link in soup.find_all('a'):
+                url = link.get('href')
+                if 'magnet:?' in url and url not in torrent_set:
+                    torrent_set.append(url)
+
+        print "Extracting torrent links completed"
+        return torrent_set
+
+    def add_new_torrents(self):
+        num_torrents = len(self.magnets)
+        self.torrent_last_added = time.time()
+
+        count = 10
+        while(count > 0):
+            if self.torrent_index >= num_torrents:
+                break
+            self.session.start_download_from_uri(self.magnets[self.torrent_index])
+            self.torrent_index += 1
+            count -= 1
 
     def makeService(self, options):
         """
