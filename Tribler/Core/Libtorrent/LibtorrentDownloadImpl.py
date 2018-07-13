@@ -1117,3 +1117,11 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
 
     def set_share_mode(self, share_mode):
         self.get_handle().addCallback(lambda handle: handle.set_share_mode(share_mode))
+
+    @checkHandleAndSynchronize()
+    def get_upload_mode(self):
+        return self.handle.status().upload_mode
+
+    def set_upload_mode(self, upload_mode):
+        self.get_handle().addCallback(lambda handle: handle.set_upload_mode(upload_mode))
+
