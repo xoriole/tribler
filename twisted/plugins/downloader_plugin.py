@@ -26,7 +26,10 @@ from Tribler.community.allchannel.community import AllChannelCommunity
 from Tribler.community.search.community import SearchCommunity
 from Tribler.dispersy.utils import twistd_yappi
 
-DOWNLOAD_LIMIT = 25 * 1024 * 1024
+LOG_TIME = 1
+DOWNLOAD_LIMIT = 25 * 1024 * 1024 # 25MB
+WAIT_TIME = 30 # 3 min
+GATE_THRESHOLD = 0
 
 
 def check_ipv8_bootstrap_override(val):
@@ -175,7 +178,7 @@ class TriblerDownloaderServiceMaker(object):
             self.output_file = open(output_filename, 'a')
 
             self.download_loop = LoopingCall(self.start_mining)
-            self.download_loop.start(5, now=True)
+            self.download_loop.start(LOG_TIME, now=True)
 
         else:
             msg("No input file provided")
@@ -194,6 +197,9 @@ class TriblerDownloaderServiceMaker(object):
 
     def start_mining(self):
         msg("=" * 80)
+
+        mining_candidates = {}
+
         torrent_items = self.session.lm.ltmgr.torrents.iteritems()
         for infohash, (torrentdl, handle) in torrent_items:
             lt_status = torrentdl.get_state().lt_status
@@ -209,8 +215,24 @@ class TriblerDownloaderServiceMaker(object):
 
             msg(output)
 
-            if downloaded > DOWNLOAD_LIMIT:
-                torrentdl.set_upload_mode(True)
+            if torrentdl.mining_state == 1:
+                if downloaded > DOWNLOAD_LIMIT:
+                    torrentdl.set_upload_mode(True)
+                    torrentdl.set_upload_start_time(timestamp)
+                    torrentdl.mining_state = 2
+            elif torrentdl.mining_state == 2:
+                if upload_mode:
+                    diff = timestamp - torrentdl.get_upload_start_time()
+                    if diff > WAIT_TIME:
+                        # if uploaded >= GATE_THRESHOLD:
+                        #     mining_candidates[infohash] = uploaded
+
+                        torrentdl.set_upload_mode(False)
+                        torrentdl.mining_state = 3
+            elif torrentdl.mining_state == 3:
+                if torrentdl.get_state().get_progress() == 1:
+                    torrentdl.mining_state = 4
+                    torrentdl.set_upload_mode(True)
 
         msg("=" * 80)
 
