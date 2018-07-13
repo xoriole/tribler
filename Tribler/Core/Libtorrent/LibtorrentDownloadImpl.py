@@ -31,6 +31,11 @@ from Tribler.Core.simpledefs import DLSTATUS_SEEDING, DLSTATUS_STOPPED, DLMODE_V
                                     PERSISTENTSTATE_CURRENTVERSION, dlstatus_strings
 from Tribler.pyipv8.ipv8.taskmanager import TaskManager
 
+# mining states
+STATE_INVEST = 1
+STATE_CHECK = 2
+STATE_DOWNLOAD = 3
+STATE_ROI = 4
 
 if sys.platform == "win32":
     try:
@@ -153,6 +158,10 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
         self.deferred_removed = Deferred()
 
         self.handle_check_lc = self.register_task("handle_check", LoopingCall(self.check_handle))
+
+        self.upload_start_time = None
+        self.mining_state = 1
+        self.add_time = time.time()
 
     def __str__(self):
         return "LibtorrentDownloadImpl <name: '%s' hops: %d checkpoint_disabled: %d>" % \
@@ -1124,4 +1133,17 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
 
     def set_upload_mode(self, upload_mode):
         self.get_handle().addCallback(lambda handle: handle.set_upload_mode(upload_mode))
+
+    @checkHandleAndSynchronize()
+    def get_download_limit(self):
+        return self.handle.status().download_limit
+
+    def set_download_limit(self, limit):
+        self.get_handle().addCallback(lambda handle: handle.set_download_limit(limit))
+
+    def set_upload_start_time(self, time):
+        self.upload_start_time = time
+
+    def get_upload_start_time(self):
+        return self.upload_start_time
 
