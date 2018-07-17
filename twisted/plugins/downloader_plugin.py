@@ -30,11 +30,19 @@ from Tribler.community.search.community import SearchCommunity
 from Tribler.dispersy.utils import twistd_yappi
 
 LOG_TIME = 5
-GATE_DOWNLOAD_LIMIT = 25 * 1024 * 1024 # 25MB
-GATE_DOWNLOAD_TIME = 3 * 60 # 3 mins to download gate download amount
+INITIAL_INVESTMENT_DOWNLOAD_LIMIT = 25 * 1024 * 1024 # 25MB
+SECONDARY_INVESTMENT_DOWNLOAD_LIMIT = 500 * 1024 * 1024 # 500MB
+INITIAL_INVESTMENT_DOWNLOAD_TIME = 3 * 60 # 3 mins to download gate download amount
 WAIT_TIME = 3 * 60 # 3 min
-GATE_THRESHOLD = 1 * 1024 * 1024
+MINIMUM_UPLOAD_THRESHOLD = 1 * 1024 * 1024
 MAX_FULL_DOWNLOADS = 10
+SCRAPE_INTERVAL = 10 * 60 # 10 Minutes
+MAX_TORRENTS = 200
+
+INITIAL_INVESTMENT_DOWNLOAD = 1
+INITIAL_INVESTMENT_SEEDING = 2
+SECONDARY_INVESTMENT_DOWNLOAD = 3
+SECONDARY_INVESTMENT_SEEDING = 4
 
 
 def check_ipv8_bootstrap_override(val):
@@ -94,6 +102,8 @@ class TriblerDownloaderServiceMaker(object):
         self.url = None
         self.torrent_index = 0
         self.full_download_count = 0
+        self.last_scrape_ts = 0
+        self.num_torrents = 0
 
     def log_incoming_remote_search(self, sock_addr, keywords):
         d = date.today()
@@ -189,7 +199,7 @@ class TriblerDownloaderServiceMaker(object):
                 self.magnets = file.readlines()
                 msg("Num of magnets:%s" % len(self.magnets))
         elif self.url:
-            self.magnets = self.crawl_torrents(self.url)
+            self.magnets = self.scrape_torrents(self.url)
             msg("Num of magnets craweled:%s" % len(self.magnets))
         else:
             msg("No input file or url is provided")
@@ -198,7 +208,7 @@ class TriblerDownloaderServiceMaker(object):
         self.add_new_torrents()
 
         self.output_file = open(output_filename, 'a')
-        self.download_loop = LoopingCall(self.start_mining)
+        self.download_loop = LoopingCall(self.run_policy2())
         self.download_loop.start(LOG_TIME, now=True)
 
         if "auto-join-channel" in options and options["auto-join-channel"]:
@@ -213,7 +223,7 @@ class TriblerDownloaderServiceMaker(object):
                 if isinstance(community, SearchCommunity):
                     community.log_incoming_searches = self.log_incoming_remote_search
 
-    def start_mining(self):
+    def run_policy1(self):
         msg("=" * 80)
 
         torrent_items = self.session.lm.ltmgr.torrents.iteritems()
@@ -232,13 +242,13 @@ class TriblerDownloaderServiceMaker(object):
             msg(output)
 
             if torrentdl.mining_state == 1:
-                if downloaded > GATE_DOWNLOAD_LIMIT:
+                if downloaded > INITIAL_INVESTMENT_DOWNLOAD_LIMIT:
                     torrentdl.set_upload_mode(True)
                     torrentdl.set_upload_start_time(timestamp)
                     torrentdl.mining_state = 2
                 else:
                     diff = time.time() - torrentdl.add_time
-                    if diff > GATE_DOWNLOAD_TIME:
+                    if diff > INITIAL_INVESTMENT_DOWNLOAD_TIME:
                         msg("[%s] Too slow torrent; downloaded: %s in %s seconds" % (infohash, downloaded, diff))
                         torrentdl.stop_remove(removestate=False, removecontent=False)
 
@@ -246,7 +256,7 @@ class TriblerDownloaderServiceMaker(object):
                 if upload_mode:
                     diff = timestamp - torrentdl.get_upload_start_time()
                     if diff > WAIT_TIME:
-                        if uploaded < GATE_THRESHOLD:
+                        if uploaded < MINIMUM_UPLOAD_THRESHOLD:
                             msg("[%s] Too low upload; uploaded: %s in %s seconds" % (infohash, downloaded, diff))
                             torrentdl.stop_remove(removestate=False, removecontent=False)
                         else:
@@ -268,9 +278,64 @@ class TriblerDownloaderServiceMaker(object):
 
         msg("=" * 80)
 
-    def crawl_torrents(self, base_url):
-        torrent_set = []
+    def run_policy2(self):
+        """
+        Scraping every 10 minutes.
+        """
+        current_ts = time.time()
+        # check if scraping is necessary and add new torrents
+        if current_ts - self.last_scrape_ts > SCRAPE_INTERVAL and self.num_torrents < MAX_TORRENTS:
+            scraped = self.scrape_torrents(self.url)
+            for magnet in scraped:
+                if magnet not in self.magnets:
+                    self.magnets.append(magnet)
+                    self.session.start_download_from_uri(magnet)
+                    self.num_torrents += 1
 
+        # Check and update torrent states
+        for infohash, (torrentdl, handle) in self.session.lm.ltmgr.torrents.iteritems():
+
+            # state information
+            lt_status = torrentdl.get_state().lt_status
+            downloaded = lt_status.all_time_download if lt_status else 0
+            uploaded = lt_status.all_time_upload if lt_status else 0
+            upload_mode = torrentdl.get_upload_mode() or False
+            share_mode = torrentdl.get_share_mode() or False
+            timestamp = time.time()
+
+            output = "%s, %s, %s, %s, %s, %s" % (infohash, timestamp, downloaded, uploaded, share_mode, upload_mode)
+            self.output_file.write(output + "\n")
+            msg(output)
+
+            mining_state = torrentdl.mining_state
+
+            # Initial investment
+            if mining_state == INITIAL_INVESTMENT_DOWNLOAD:
+                # Wait indefinitely until initial investment download limit is reached, then move to next phase
+                if downloaded > INITIAL_INVESTMENT_DOWNLOAD_LIMIT:
+                    torrentdl.set_upload_mode(True)
+                    torrentdl.set_upload_start_time(timestamp)
+                    torrentdl.mining_state = INITIAL_INVESTMENT_SEEDING
+
+            elif mining_state == INITIAL_INVESTMENT_SEEDING:
+                diff = timestamp - torrentdl.get_upload_start_time()
+                if diff > WAIT_TIME:
+                    if uploaded > MINIMUM_UPLOAD_THRESHOLD:
+                        if self.full_download_count < MAX_FULL_DOWNLOADS:
+                            torrentdl.set_upload_mode(False)
+                            torrentdl.mining_state = SECONDARY_INVESTMENT_DOWNLOAD
+                            self.full_download_count += 1
+
+            elif mining_state == SECONDARY_INVESTMENT_DOWNLOAD:
+                if downloaded > SECONDARY_INVESTMENT_DOWNLOAD_LIMIT:
+                    # If secondary investment download limit is reached, just start seeding
+                    torrentdl.set_upload_mode(True)
+                    torrentdl.mining_state = SECONDARY_INVESTMENT_SEEDING
+
+    def scrape_torrents(self, base_url):
+        self.last_scrape_ts = time.time()
+
+        torrent_set = []
         for i in xrange(4):
             webpage_url = "%s/%s" % (base_url, i)
 
