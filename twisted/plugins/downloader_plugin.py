@@ -1,14 +1,13 @@
 """
 This twistd plugin enables to start Tribler headless using the twistd command.
 """
-import requests
-from socket import inet_aton
-from datetime import date
 import os
+import re
+import requests
 import signal
 import time
-
-import re
+from datetime import date
+from socket import inet_aton
 from twisted.application.service import MultiService, IServiceMaker
 from twisted.conch import manhole_tap
 from twisted.internet import reactor
@@ -23,26 +22,27 @@ from bs4 import BeautifulSoup
 from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
-
-# Register yappi profiler
 from Tribler.community.allchannel.community import AllChannelCommunity
 from Tribler.community.search.community import SearchCommunity
-from Tribler.dispersy.utils import twistd_yappi
+from check_os import enable_fault_handler
 
 LOG_TIME = 5
-INITIAL_INVESTMENT_DOWNLOAD_LIMIT = 25 * 1024 * 1024 # 25MB
-SECONDARY_INVESTMENT_DOWNLOAD_LIMIT = 500 * 1024 * 1024 # 500MB
-INITIAL_INVESTMENT_DOWNLOAD_TIME = 3 * 60 # 3 mins to download gate download amount
-WAIT_TIME = 3 * 60 # 3 min
+INITIAL_INVESTMENT_DOWNLOAD_LIMIT = 25 * 1024 * 1024  # 25MB
+SECONDARY_INVESTMENT_DOWNLOAD_LIMIT = 500 * 1024 * 1024  # 500MB
+INITIAL_INVESTMENT_DOWNLOAD_TIME = 3 * 60  # 3 mins to download gate download amount
+WAIT_TIME = 3 * 60  # 3 min
 MINIMUM_UPLOAD_THRESHOLD = 1 * 1024 * 1024
 MAX_FULL_DOWNLOADS = 10
-SCRAPE_INTERVAL = 10 * 60 # 10 Minutes
+SCRAPE_INTERVAL = 10 * 60  # 10 Minutes
 MAX_TORRENTS = 200
 
 INITIAL_INVESTMENT_DOWNLOAD = 1
 INITIAL_INVESTMENT_SEEDING = 2
 SECONDARY_INVESTMENT_DOWNLOAD = 3
 SECONDARY_INVESTMENT_SEEDING = 4
+
+# Enable fault handler to check for segfaults
+enable_fault_handler()
 
 
 def check_ipv8_bootstrap_override(val):
@@ -59,6 +59,8 @@ def check_ipv8_bootstrap_override(val):
     if port < 0 or port > 65535:
         raise ValueError("Invalid bootstrap server port")
     return ip, port
+
+
 check_ipv8_bootstrap_override.coerceDoc = "IPv8 bootstrap server address must be in ipv4_addr:port format"
 
 
@@ -107,7 +109,8 @@ class TriblerDownloaderServiceMaker(object):
 
     def log_incoming_remote_search(self, sock_addr, keywords):
         d = date.today()
-        with open(os.path.join(self.session.config.get_state_dir(), 'incoming-searches-%s' % d.isoformat()), 'a') as log_file:
+        with open(os.path.join(self.session.config.get_state_dir(), 'incoming-searches-%s' % d.isoformat()),
+                  'a') as log_file:
             log_file.write("%s %s %s %s" % (time.time(), sock_addr[0], sock_addr[1], ";".join(keywords)))
 
     def shutdown_process(self, shutdown_message, code=1):
@@ -122,6 +125,7 @@ class TriblerDownloaderServiceMaker(object):
         """
         Main method to startup Tribler.
         """
+
         def on_tribler_shutdown(_):
             msg("Tribler shut down")
             reactor.stop()
@@ -179,7 +183,7 @@ class TriblerDownloaderServiceMaker(object):
         output_filename = "output.csv"
         if options["output_filename"]:
             output_filename = options["output_filename"]
-        #Add timestamp prefix to output file
+        # Add timestamp prefix to output file
         output_filename = "%s.%s" % (int(time.time()), output_filename)
 
         config.set_libtorrent_enabled(True)
@@ -194,21 +198,21 @@ class TriblerDownloaderServiceMaker(object):
 
         self.magnets = []
         # If magnet file in provided
-        if input_filename and os.path.exists(input_filename):
-            with open(input_filename, 'r') as file:
-                self.magnets = file.readlines()
-                msg("Num of magnets:%s" % len(self.magnets))
-        elif self.url:
-            self.magnets = self.scrape_torrents(self.url)
-            msg("Num of magnets craweled:%s" % len(self.magnets))
-        else:
-            msg("No input file or url is provided")
+        # if input_filename and os.path.exists(input_filename):
+        #     with open(input_filename, 'r') as file:
+        #         self.magnets = file.readlines()
+        #         msg("Num of magnets:%s" % len(self.magnets))
+        # elif self.url:
+        #     self.magnets = self.scrape_torrents(self.url)
+        #     msg("Num of magnets craweled:%s" % len(self.magnets))
+        # else:
+        #     msg("No input file or url is provided")
 
         # Add first batch of torrents
-        self.add_new_torrents()
+        # self.add_new_torrents()
 
         self.output_file = open(output_filename, 'a')
-        self.download_loop = LoopingCall(self.run_policy2())
+        self.download_loop = LoopingCall(self.run_policy2)
         self.download_loop.start(LOG_TIME, now=True)
 
         if "auto-join-channel" in options and options["auto-join-channel"]:
@@ -282,10 +286,13 @@ class TriblerDownloaderServiceMaker(object):
         """
         Scraping every 10 minutes.
         """
+        msg("=" * 80)
+
         current_ts = time.time()
         # check if scraping is necessary and add new torrents
         if current_ts - self.last_scrape_ts > SCRAPE_INTERVAL and self.num_torrents < MAX_TORRENTS:
             scraped = self.scrape_torrents(self.url)
+            msg("Scraped %s magnet links" % len(scraped))
             for magnet in scraped:
                 if magnet not in self.magnets:
                     self.magnets.append(magnet)
@@ -332,11 +339,13 @@ class TriblerDownloaderServiceMaker(object):
                     torrentdl.set_upload_mode(True)
                     torrentdl.mining_state = SECONDARY_INVESTMENT_SEEDING
 
+        msg("=" * 80)
+
     def scrape_torrents(self, base_url):
         self.last_scrape_ts = time.time()
 
         torrent_set = []
-        for i in xrange(4):
+        for i in xrange(1):
             webpage_url = "%s/%s" % (base_url, i)
 
             request = requests.get(webpage_url)
@@ -348,8 +357,8 @@ class TriblerDownloaderServiceMaker(object):
                 if 'magnet:?' in url and url not in torrent_set:
                     torrent_set.append(url)
 
-        print "Extracting torrent links completed"
-        return torrent_set[:100]
+        print "Extracting %s torrent links completed" % len(torrent_set)
+        return torrent_set
 
     def add_new_torrents(self):
         num_torrents = len(self.magnets)
@@ -384,5 +393,6 @@ class TriblerDownloaderServiceMaker(object):
         reactor.callWhenRunning(self.start_tribler, options)
 
         return tribler_service
+
 
 service_maker = TriblerDownloaderServiceMaker()
