@@ -29,7 +29,7 @@ from Tribler.community.allchannel.community import AllChannelCommunity
 from Tribler.community.search.community import SearchCommunity
 from Tribler.dispersy.utils import twistd_yappi
 
-LOG_TIME = 1
+LOG_TIME = 5
 GATE_DOWNLOAD_LIMIT = 25 * 1024 * 1024 # 25MB
 GATE_DOWNLOAD_TIME = 3 * 60 # 3 mins to download gate download amount
 WAIT_TIME = 3 * 60 # 3 min
@@ -271,7 +271,7 @@ class TriblerDownloaderServiceMaker(object):
     def crawl_torrents(self, base_url):
         torrent_set = []
 
-        for i in xrange(1):
+        for i in xrange(4):
             webpage_url = "%s/%s" % (base_url, i)
 
             request = requests.get(webpage_url)
@@ -284,14 +284,14 @@ class TriblerDownloaderServiceMaker(object):
                     torrent_set.append(url)
 
         print "Extracting torrent links completed"
-        return torrent_set
+        return torrent_set[:100]
 
     def add_new_torrents(self):
         num_torrents = len(self.magnets)
         self.torrent_last_added = time.time()
 
         count = 10
-        while(count > 0):
+        while count > 0:
             if self.torrent_index >= num_torrents:
                 break
             self.session.start_download_from_uri(self.magnets[self.torrent_index])
