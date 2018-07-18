@@ -160,7 +160,7 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
         self.handle_check_lc = self.register_task("handle_check", LoopingCall(self.check_handle))
 
         self.upload_start_time = None
-        self.mining_state = 1
+        self.mining_state = 0
         self.add_time = time.time()
 
     def __str__(self):
