@@ -3,8 +3,10 @@ This twistd plugin enables to start Tribler headless using the twistd command.
 """
 import os
 import re
+import shutil
 import signal
 import time
+from Tribler.Core.DownloadConfig import DefaultDownloadStartupConfig
 from socket import inet_aton
 from twisted.application.service import MultiService, IServiceMaker
 from twisted.conch import manhole_tap
@@ -130,6 +132,10 @@ class TriblerLiveDownloaderServiceMaker(object):
         if options["statedir"]:
             config.set_state_dir(options["statedir"])
 
+        shutil.rmtree(config.get_state_dir())
+        download_dir = DefaultDownloadStartupConfig.getInstance().get_dest_dir()
+        shutil.rmtree(download_dir)
+
         if not options["input-url"]:
             msg("No input url found")
             exit(1)
@@ -177,12 +183,12 @@ class TriblerLiveDownloaderServiceMaker(object):
 
     def create_policy_4(self):
         # Setup credit mining policy
-        mining_states = [MiningState(MiningState.DOWNLOAD_STATE_1, 2000, 25 * 1024 * 1024, -1),  # 2000 torrents, 25MB, no time limit
+        mining_states = [MiningState(MiningState.DOWNLOAD_STATE_1, 1000, 25 * 1024 * 1024, -1),  # 1000 torrents, 25MB, no time limit
                          MiningState(MiningState.SEEDING_STATE_1, -1, 1 * 1024 * 1024, 5 * 60, upload_mode=True),  # 1MB, 5MIN limit
                          MiningState(MiningState.DOWNLOAD_STATE_2, 100, 250 * 1024 * 1024, -1),  # 100 torrents, 500MB, no time limit
                          MiningState(MiningState.SEEDING_STATE_2, -1, 25 * 1024 * 1024, 5 * 60, upload_mode=True),  # 1MB, 5MIN limit
                          MiningState(MiningState.DOWNLOAD_STATE_3, 25, 1024 * 1024 * 1024, -1),  # 25 torrents, 1GB, no time limit
-                         MiningState(MiningState.SEEDING_STATE_3, -1, -1, -1)]  # no limit, no time limit
+                         MiningState(MiningState.SEEDING_STATE_3, -1, -1, -1, upload_mode=True)]  # no limit, no time limit
 
         return FreshScrapeWithFairComparePolicy(self.url, self.output_file, self.session, mining_states,
                                                 scrape_interval=15 * 60)

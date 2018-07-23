@@ -129,7 +129,7 @@ class FreshScrapePolicy(BaseMiningPolicy):
 
             output = "%s, %s, %s, %s, %s, %s" % (infohash, timestamp, downloaded, uploaded, share_mode, upload_mode)
             self.output_file.write(output + "\n")
-            self.logger.info(output)
+            print output
 
             mining_state = self.mining_states[torrentdl.mining_state]
             if mining_state.upload_mode:
@@ -141,6 +141,7 @@ class FreshScrapePolicy(BaseMiningPolicy):
                             torrentdl.mining_state += 1
             else:
                 if downloaded > mining_state.bandwidth_limit:
+                    print "upgrading state: downloaded:%s, limit:%s" % (downloaded, mining_state.bandwidth_limit)
                     torrentdl.set_upload_mode(True)
                     torrentdl.set_upload_start_time(timestamp)
                     torrentdl.mining_state += 1
@@ -156,10 +157,11 @@ class FreshScrapeWithFairComparePolicy(BaseMiningPolicy):
         """
         Execute the policy periodically.
         """
+        self.logger.info("\n\n")
         # Add torrents; check if scraping is necessary and add new torrents
         if time.time() - self.last_scrape_ts > self.scrape_interval and self.mining_states[0].add_torrent():
             scraped = self.scrape_torrents(self.url)
-            self.logger.info("Scraped %s magnet links", len(scraped))
+            print "Scraped %s magnet links" % len(scraped)
             for magnet in scraped:
                 if magnet not in self.magnets and self.mining_states[0].add_torrent():
                     self.magnets.append(magnet)
@@ -169,20 +171,20 @@ class FreshScrapeWithFairComparePolicy(BaseMiningPolicy):
         for infohash, (torrentdl, handle) in self.session.lm.ltmgr.torrents.iteritems():
             # state information
             lt_status = torrentdl.get_state().lt_status
-            downloaded = lt_status.all_time_download if lt_status else 0
-            uploaded = lt_status.all_time_upload if lt_status else 0
+            downloaded = lt_status.total_payload_download if lt_status else 0
+            uploaded = lt_status.total_payload_upload if lt_status else 0
             upload_mode = torrentdl.get_upload_mode() or False
             share_mode = torrentdl.get_share_mode() or False
             timestamp = time.time()
             num_peers = len(torrentdl.get_peerlist()) or 0
 
-            output = "%s, %s, %s, %s, %s, %s, %s" % (infohash, timestamp, downloaded, uploaded, num_peers, share_mode, upload_mode)
+            output = "%s, %s, %s, %s, %s, %s, %s, %s" % (infohash, timestamp, downloaded, uploaded, num_peers,
+                                                         share_mode, upload_mode, torrentdl.mining_state)
             self.output_file.write(output + "\n")
             self.logger.info(output)
+            print output
 
             mining_state = self.mining_states[torrentdl.mining_state]
-            next_mining_state = self.mining_states[torrentdl.mining_state + 1] \
-                if len(self.mining_states) > torrentdl.mining_state else None
             if mining_state.upload_mode:
                 diff = timestamp - torrentdl.get_upload_start_time()
                 if diff > mining_state.wait_time:
@@ -196,19 +198,33 @@ class FreshScrapeWithFairComparePolicy(BaseMiningPolicy):
                     torrentdl.mining_state += 1
 
         # Check for promotions
+        print "***" * 10, "Checking promotion states ", "***" * 10
         for mining_state in self.mining_states:
+            print "state[%s]-> %s candidates, upload_mode:%s" % (mining_state.state, len(mining_state.promotion_candidates), mining_state.upload_mode)
+            if mining_state == self.mining_states[-1]:
+                break
             if not mining_state.last_promotion_ts:
                 mining_state.last_promotion_ts = time.time()
                 continue
-            if mining_state.upload_mode and time.time() - mining_state.last_promotion_ts >= mining_state.promotion_interval:
+            diff = time.time() - mining_state.last_promotion_ts
+            should_promote = diff >= mining_state.promotion_interval
+            print "last promotion:%s, diff:%s, interval:%s, should_promote:%s" % (mining_state.last_promotion_ts, diff, mining_state.promotion_interval, should_promote)
+            if mining_state.upload_mode and should_promote:
+                mining_state.last_promotion_ts = time.time()
                 best_candidates = mining_state.pop_best_candidate()
-                if best_candidates and mining_state.add_torrent():
-                    next_mining_state = self.mining_states[mining_state.state + 1] \
-                        if len(self.mining_states) > mining_state.state else None
+                print "promotion candidate:%s" % best_candidates
+                next_mining_state = self.mining_states[mining_state.state + 1] \
+                    if len(self.mining_states) > mining_state.state else None
+                if next_mining_state and best_candidates:
                     (torrentdl, handle) = self.session.lm.ltmgr.torrents[best_candidates[0]]
+                    print "promotion torrent:%s, %s" % (torrentdl, handle)
                     if next_mining_state and next_mining_state.add_torrent():
+                        print "promoted %s", best_candidates[0]
                         torrentdl.set_upload_mode(False)
                         torrentdl.mining_state += 1
+                        del mining_state.promotion_candidates[best_candidates[0]]
+
+        self.logger.info("\n\n")
 
 
 class MiningPolicy4(BaseMiningPolicy):
