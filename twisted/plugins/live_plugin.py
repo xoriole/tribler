@@ -19,7 +19,7 @@ from zope.interface import implements
 
 from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.CreditMining.LiveCreditMiningPolicy import MiningState, FreshScrapeWithFairComparePolicy, \
-    FreshScrapePolicy
+    FreshScrapePolicy, TimeConstraintFullDownloadPolicy
 from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 from Tribler.community.allchannel.community import AllChannelCommunity
@@ -160,7 +160,7 @@ class TriblerLiveDownloaderServiceMaker(object):
         msg("state directory:", config.get_state_dir())
 
         # Setup credit mining policy
-        policy = self.create_policy_4()
+        policy = self.create_policy_1_or_2()
 
         self.mining_loop = LoopingCall(policy.execute)
         self.mining_loop.start(LOG_TIME, now=True)
@@ -171,8 +171,18 @@ class TriblerLiveDownloaderServiceMaker(object):
                 if isinstance(community, AllChannelCommunity):
                     community.auto_join_channel = True
 
+    def create_policy_1_or_2(self):
+        # Setup credit mining policy 1 or 2, the difference lies on the input whether popular torrents or recent ones
+        # are used.
+        mining_states = [MiningState(MiningState.DOWNLOAD_STATE_1, 100, 25 * 1024 * 1024, 10 * 60),  # 25MB, no time limit
+                         MiningState(MiningState.SEEDING_STATE_1, -1, 1 * 1024 * 1024, 10 * 60, promotion_interval = 10, upload_mode=True),  # 1MB, 5MIN limit
+                         MiningState(MiningState.DOWNLOAD_STATE_2, 10, -1, -1),  # full download, no time limit
+                         MiningState(MiningState.SEEDING_STATE_2, -1, -1, -1, upload_mode=True)]  # no limit, no time limit
+
+        return TimeConstraintFullDownloadPolicy(self.url, self.output_file, self.session, mining_states, scrape_interval=10)
+
     def create_policy_3(self):
-        # Setup credit mining policy
+        # Setup credit mining policy 3
         mining_states = [MiningState(MiningState.DOWNLOAD_STATE_1, 200, 25 * 1024 * 1024, -1),  # 25MB, no time limit
                          MiningState(MiningState.SEEDING_STATE_1, -1, 1 * 1024 * 1024, 5 * 60, upload_mode=True),  # 1MB, 5MIN limit
                          MiningState(MiningState.DOWNLOAD_STATE_2, 190, 500 * 1024 * 1024, -1),  # 500MB, no time limit
@@ -182,7 +192,7 @@ class TriblerLiveDownloaderServiceMaker(object):
                                  scrape_interval=10*60)
 
     def create_policy_4(self):
-        # Setup credit mining policy
+        # Setup credit mining policy 4
         mining_states = [MiningState(MiningState.DOWNLOAD_STATE_1, 1000, 25 * 1024 * 1024, -1),  # 1000 torrents, 25MB, no time limit
                          MiningState(MiningState.SEEDING_STATE_1, -1, 1 * 1024 * 1024, 5 * 60, upload_mode=True),  # 1MB, 5MIN limit
                          MiningState(MiningState.DOWNLOAD_STATE_2, 100, 250 * 1024 * 1024, -1),  # 100 torrents, 500MB, no time limit
