@@ -1,11 +1,14 @@
 """
 This twistd plugin enables to start Tribler headless using the twistd command.
 """
+import logging
 import os
 import re
 import shutil
 import signal
 import time
+from twisted.application import service
+
 from Tribler.Core.DownloadConfig import DefaultDownloadStartupConfig
 from socket import inet_aton
 from twisted.application.service import MultiService, IServiceMaker
@@ -68,7 +71,8 @@ class Options(usage.Options):
         ["manhole", "m", 0, "Enable manhole telnet service listening at the specified port", int],
         ["statedir", "s", None, "Use an alternate statedir", str],
         ["output-file", "o", None, "Output file", str],
-        ["input-url", "u", '', "Input URL", str]
+        ["input-url", "u", '', "Input URL", str],
+        ["policy", "p", 0, "Specify policy [1-5]", int]
     ]
     optFlags = [
         ["auto-join-channel", "a", "Automatically join a channel when discovered"]
@@ -91,6 +95,7 @@ class TriblerLiveDownloaderServiceMaker(object):
         self.mining_loop = None
         self.output_file = None
         self.url = None
+        self.policy = None
 
     def shutdown_process(self, shutdown_message, code=1):
         self.mining_loop = None
@@ -112,7 +117,9 @@ class TriblerLiveDownloaderServiceMaker(object):
 
         def signal_handler(sig, _):
             msg("Received shut down signal %s" % sig)
-            if not self._stopping:
+            if not self.session:
+                on_tribler_shutdown(None)
+            elif not self._stopping:
                 self._stopping = True
                 self.session.shutdown().addCallback(on_tribler_shutdown)
 
@@ -132,15 +139,24 @@ class TriblerLiveDownloaderServiceMaker(object):
         if options["statedir"]:
             config.set_state_dir(options["statedir"])
 
-        shutil.rmtree(config.get_state_dir())
-        download_dir = DefaultDownloadStartupConfig.getInstance().get_dest_dir()
-        shutil.rmtree(download_dir)
-
         if not options["input-url"]:
             msg("No input url found")
-            exit(1)
+            return
         else:
             self.url = options["input-url"]
+            msg("URL:", self.url)
+
+        # check policy
+        if not options["policy"] or int(options["policy"]) == 0:
+            msg("No policy specified. Specify a policy [1-5]")
+            return
+
+        # Clear download and state directory if exists
+        if os.path.exists(config.get_state_dir()):
+            shutil.rmtree(config.get_state_dir())
+        download_dir = DefaultDownloadStartupConfig.getInstance().get_dest_dir()
+        if os.path.exists(download_dir):
+            shutil.rmtree(download_dir)
 
         output_filename = "output.csv"
         if options["output-file"]:
@@ -155,14 +171,16 @@ class TriblerLiveDownloaderServiceMaker(object):
         config.set_popularity_community_enabled(False)
 
         self.session = Session(config)
-        self.session.start().addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage()))
+        self.session.start()\
+            .addErrback(lambda failure: self.shutdown_process(failure.getErrorMessage()))
+
         msg("Tribler started")
         msg("state directory:", config.get_state_dir())
 
-        # Setup credit mining policy
-        policy = self.create_policy_1_or_2()
-
-        self.mining_loop = LoopingCall(policy.execute)
+        # Start execution of credit mining policy
+        msg("Applying policy:", options["policy"])
+        self.policy = self.load_policy(int(options["policy"]))
+        self.mining_loop = LoopingCall(self.policy.execute)
         self.mining_loop.start(LOG_TIME, now=True)
 
         if "auto-join-channel" in options and options["auto-join-channel"]:
@@ -170,6 +188,15 @@ class TriblerLiveDownloaderServiceMaker(object):
             for community in self.session.get_dispersy_instance().get_communities():
                 if isinstance(community, AllChannelCommunity):
                     community.auto_join_channel = True
+
+    def load_policy(self, policy_type):
+        if policy_type == 1 or policy_type == 2:
+            return self.create_policy_1_or_2()
+        elif policy_type == 3:
+            return self.create_policy_3()
+        elif policy_type == 4:
+            return self.create_policy_4()
+        return None
 
     def create_policy_1_or_2(self):
         # Setup credit mining policy 1 or 2, the difference lies on the input whether popular torrents or recent ones
