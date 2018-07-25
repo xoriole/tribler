@@ -22,7 +22,7 @@ from zope.interface import implements
 
 from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.CreditMining.LiveCreditMiningPolicy import MiningState, FreshScrapeWithFairComparePolicy, \
-    FreshScrapePolicy, TimeConstraintFullDownloadPolicy
+    FreshScrapePolicy, TimeConstraintFullDownloadPolicy, MultiLevelInvestmentPolicy
 from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 from Tribler.community.allchannel.community import AllChannelCommunity
@@ -42,6 +42,8 @@ INITIAL_INVESTMENT_DOWNLOAD = 1
 INITIAL_INVESTMENT_SEEDING = 2
 SECONDARY_INVESTMENT_DOWNLOAD = 3
 SECONDARY_INVESTMENT_SEEDING = 4
+
+MB = 1024 * 1024
 
 # Enable fault handler to check for segfaults
 enable_fault_handler()
@@ -196,6 +198,8 @@ class TriblerLiveDownloaderServiceMaker(object):
             return self.create_policy_3()
         elif policy_type == 4:
             return self.create_policy_4()
+        elif policy_type == 5:
+            return self.create_policy_5()
         return None
 
     def create_policy_1_or_2(self):
@@ -229,6 +233,45 @@ class TriblerLiveDownloaderServiceMaker(object):
 
         return FreshScrapeWithFairComparePolicy(self.url, self.output_file, self.session, mining_states,
                                                 scrape_interval=15 * 60)
+
+    def create_policy_5(self):
+        """
+        Multilevel investment policy
+        Level limit follows the progression: a, a + a/2, ...
+        """
+        max_torrents = 100
+        wait_time = 0   # No wait time
+        mining_states = [MiningState(0, max_torrents, 5 * MB, wait_time, upload_mode=False),
+                         MiningState(1, max_torrents, 5 * MB, wait_time, upload_mode=True),
+                         MiningState(2, max_torrents, 8 * MB, wait_time, upload_mode=False),
+                         MiningState(3, max_torrents, 8 * MB, wait_time, upload_mode=True),
+                         MiningState(4, max_torrents, 12 * MB, wait_time, upload_mode=False),
+                         MiningState(5, max_torrents, 12 * MB, wait_time, upload_mode=True),
+                         MiningState(6, max_torrents, 18 * MB, wait_time, upload_mode=False),
+                         MiningState(7, max_torrents, 18 * MB, wait_time, upload_mode=True),
+                         MiningState(8, max_torrents, 27 * MB, wait_time, upload_mode=False),
+                         MiningState(9, max_torrents, 27 * MB, wait_time, upload_mode=True),
+                         MiningState(10, max_torrents, 40 * MB, wait_time, upload_mode=False),
+                         MiningState(11, max_torrents, 40 * MB, wait_time, upload_mode=True),
+                         MiningState(12, max_torrents, 60 * MB, wait_time, upload_mode=False),
+                         MiningState(13, max_torrents, 60 * MB, wait_time, upload_mode=True),
+                         MiningState(14, max_torrents, 90 * MB, wait_time, upload_mode=False),
+                         MiningState(15, max_torrents, 90 * MB, wait_time, upload_mode=True),
+                         MiningState(16, max_torrents, 135 * MB, wait_time, upload_mode=False),
+                         MiningState(17, max_torrents, 135 * MB, wait_time, upload_mode=True),
+                         MiningState(18, max_torrents, 200 * MB, wait_time, upload_mode=False),
+                         MiningState(19, max_torrents, 200 * MB, wait_time, upload_mode=True),
+                         ]
+
+        settings = {
+            "url": self.url,
+            "output_file": self.output_file,
+            "max_torrents": max_torrents,
+            "scrape_interval": 15 * 60,
+            "max_storage": 50 * 1024 * MB
+        }
+
+        return MultiLevelInvestmentPolicy(self.session, mining_states, settings)
 
     def makeService(self, options):
         """

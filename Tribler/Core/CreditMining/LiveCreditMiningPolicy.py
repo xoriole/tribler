@@ -1,4 +1,5 @@
 import logging
+import psutil
 import requests
 import time
 from operator import itemgetter
@@ -335,76 +336,97 @@ class FreshScrapeWithFairComparePolicy(BaseMiningPolicy):
         self.logger.info("\n\n")
 
 
-class MiningPolicy4(BaseMiningPolicy):
+class MultiLevelInvestmentPolicy(BaseMiningPolicy):
     """
-        50%     25MB each   50GB total --> 2000 investment
-        25%     250MB each  25GB total --> 100 promotions
-        25%     1GB each    25GB total --> 25 promotions
-
-        15 minutes of scraping
+    Multi level investment policy.
+    Multiple investment levels are set and when a torrent downloads a specific bandwidth limit of the level, it is
+    set to upload mode and keeps waiting until the same amount is uploaded, in which case it is promoted to the next
+    level.
     """
-    def __init__(self, url, output_file, session, mining_states, scrape_interval=10 * 60):
-        super(MiningPolicy4, self).__init__(url, output_file, session, mining_states, scrape_interval=scrape_interval)
 
-    def execute(self):
-        """
-        Execute the policy periodically.
-        """
+    def __init__(self, session, mining_states, settings):
+        super(MultiLevelInvestmentPolicy, self).__init__(settings["url"], settings["output_file"],
+                                                         session, mining_states,
+                                                         scrape_interval=settings["scrape_interval"])
+
+        self.settings = settings
+        self.round_counter = 0
+        self.active_torrents = 0
+
+        self.last_download_sum = 0
+        self.last_reserve_sum = 0
+
+    def get_stats(self, torrent_download):
+        timestamp = time.time()
+        lt_status = torrent_download.get_state().lt_status
+        downloaded = lt_status.total_payload_download if lt_status else 0
+        uploaded = lt_status.total_payload_upload if lt_status else 0
+        upload_mode = torrent_download.get_upload_mode() or False
+        share_mode = torrent_download.get_share_mode() or False
+        num_peers = len(torrent_download.get_peerlist()) or 0
+        return timestamp, downloaded, uploaded, num_peers, share_mode, upload_mode
+
+    def fill_new_torrents(self):
         # Add torrents; check if scraping is necessary and add new torrents
-        if time.time() - self.last_scrape_ts > self.scrape_interval and self.mining_states[0].add_torrent():
+        if time.time() - self.last_scrape_ts > self.scrape_interval \
+                and self.active_torrents < self.settings["max_torrents"]:
+
             scraped = self.scrape_torrents(self.url)
-            self.logger.info("Scraped %s magnet links", len(scraped))
+            print "Scraped %s magnet links" % len(scraped)
+
             for magnet in scraped:
-                if magnet not in self.magnets and self.mining_states[0].add_torrent():
+                if self.active_torrents >= self.settings["max_torrents"]:
+                    break
+                if magnet not in self.magnets:
+                    self.active_torrents += 1
                     self.magnets.append(magnet)
                     self.session.start_download_from_uri(magnet)
 
+    def execute(self):
+        self.logger.info("\n\n")
+        self.round_counter += 1
+
+        # Add torrents; check if scraping is necessary and add new torrents
+        self.fill_new_torrents()
+
         # Check and update the states for all torrents
+        download_sum = 0
+        reserve_sum = 0
+        new_reserve_sum = 0
+        index = 0
         for infohash, (torrentdl, handle) in self.session.lm.ltmgr.torrents.iteritems():
             # state information
-            lt_status = torrentdl.get_state().lt_status
-            downloaded = lt_status.all_time_download if lt_status else 0
-            uploaded = lt_status.all_time_upload if lt_status else 0
-            upload_mode = torrentdl.get_upload_mode() or False
-            share_mode = torrentdl.get_share_mode() or False
-            timestamp = time.time()
+            timestamp, downloaded, uploaded, num_peers, share_mode, upload_mode = self.get_stats(torrentdl)
+            download_sum += downloaded
+            index += 1
 
-            output = "%s, %s, %s, %s, %s, %s" % (infohash, timestamp, downloaded, uploaded, share_mode, upload_mode)
+            output = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s" % (self.round_counter, index, infohash, timestamp,
+                                                                 downloaded, uploaded, num_peers, share_mode,
+                                                                 upload_mode, torrentdl.mining_state)
             self.output_file.write(output + "\n")
             self.logger.info(output)
+            print output
 
-            mining_state = torrentdl.mining_state
-
-            if mining_state == MiningState.DOWNLOAD_STATE_1:
-                if downloaded > self.mining_states[mining_state].bandwidth_limit:
+            mining_state = self.mining_states[torrentdl.mining_state]
+            if mining_state == self.mining_states[-1]:
+                continue
+            if mining_state.upload_mode:
+                next_mining_state = self.mining_states[mining_state.state + 1]
+                if next_mining_state and uploaded > mining_state.bandwidth_limit:
+                    if self.last_download_sum + self.last_reserve_sum + new_reserve_sum < self.settings["max_storage"]:
+                        torrentdl.set_upload_mode(False)
+                        torrentdl.mining_state += 1
+                        new_reserve_sum += next_mining_state.bandwidth_limit - downloaded
+            else:
+                diff = mining_state.bandwidth_limit - downloaded
+                if diff > 0:
+                    reserve_sum += diff
+                else:
                     torrentdl.set_upload_mode(True)
-                    torrentdl.set_upload_start_time(timestamp)
-                    torrentdl.mining_state = MiningState.SEEDING_STATE_1
+                    torrentdl.mining_state += 1
 
-            elif mining_state == MiningState.SEEDING_STATE_1:
-                diff = timestamp - torrentdl.get_upload_start_time()
-                if diff > self.mining_states[mining_state].time:
-                    if uploaded > self.mining_states[mining_state].bandwidth_limit:
-                        if self.mining_states[mining_state].add_torrent():
-                            torrentdl.set_upload_mode(False)
-                            torrentdl.mining_state = MiningState.DOWNLOAD_STATE_2
+        # update the sum states
+        self.last_download_sum = download_sum
+        self.last_reserve_sum = reserve_sum
 
-            elif mining_state == MiningState.DOWNLOAD_STATE_2:
-                if downloaded > self.mining_states[mining_state].bandwidth_limit:
-                    torrentdl.set_upload_mode(True)
-                    torrentdl.mining_state = MiningState.SEEDING_STATE_2
-                    torrentdl.set_upload_start_time(timestamp)
-
-            elif mining_state == MiningState.SEEDING_STATE_2:
-                diff = timestamp - torrentdl.get_upload_start_time()
-                if diff > self.mining_states[mining_state].time:
-                    if uploaded > self.mining_states[mining_state].bandwidth_limit:
-                        if self.mining_states[mining_state].add_torrent():
-                            torrentdl.set_upload_mode(False)
-                            torrentdl.mining_state = MiningState.DOWNLOAD_STATE_3
-
-            elif mining_state == MiningState.DOWNLOAD_STATE_3:
-                if downloaded > self.mining_states[mining_state].bandwidth_limit:
-                    torrentdl.set_upload_mode(True)
-                    torrentdl.mining_state = MiningState.SEEDING_STATE_3
-                    torrentdl.set_upload_start_time(timestamp)
+        self.logger.info("\n\n")
