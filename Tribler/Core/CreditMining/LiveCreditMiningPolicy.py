@@ -262,13 +262,20 @@ class FreshScrapeWithFairComparePolicy(BaseMiningPolicy):
         super(FreshScrapeWithFairComparePolicy, self).__init__(url, output_file, session, mining_states,
                                                                scrape_interval=scrape_interval)
 
+    def should_add_torrent(self):
+        state2_slot_available = self.mining_states[MiningState.DOWNLOAD_STATE_2].num_torrents < self.mining_states[MiningState.DOWNLOAD_STATE_2].max_torrents
+        state3_slot_available = self.mining_states[MiningState.DOWNLOAD_STATE_3].num_torrents < self.mining_states[MiningState.DOWNLOAD_STATE_3].max_torrents
+        if state2_slot_available or state3_slot_available:
+            return True
+        return False
+
     def execute(self):
         """
         Execute the policy periodically.
         """
         self.logger.info("\n\n")
         # Add torrents; check if scraping is necessary and add new torrents
-        if time.time() - self.last_scrape_ts > self.scrape_interval and self.mining_states[0].add_torrent():
+        if time.time() - self.last_scrape_ts > self.scrape_interval and self.mining_states[0].add_torrent() and self.should_add_torrent():
             scraped = self.scrape_torrents(self.url)
             print "Scraped %s magnet links" % len(scraped)
             for magnet in scraped:
