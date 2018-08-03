@@ -22,7 +22,7 @@ from zope.interface import implements
 
 from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.CreditMining.LiveCreditMiningPolicy import MiningState, FreshScrapeWithFairComparePolicy, \
-    FreshScrapePolicy, TimeConstraintFullDownloadPolicy, MultiLevelInvestmentPolicy
+    FreshScrapePolicy, TimeConstraintFullDownloadPolicy, MultiLevelInvestmentPolicy, MultiLevelGreedySpacePolicy
 from Tribler.Core.Modules.process_checker import ProcessChecker
 from Tribler.Core.Session import Session
 from Tribler.community.allchannel.community import AllChannelCommunity
@@ -200,6 +200,8 @@ class TriblerLiveDownloaderServiceMaker(object):
             return self.create_policy_4()
         elif policy_type == 5:
             return self.create_policy_5()
+        elif policy_type == 6:
+            return self.create_policy_6()
         return None
 
     def create_policy_1_or_2(self):
@@ -272,6 +274,56 @@ class TriblerLiveDownloaderServiceMaker(object):
         }
 
         return MultiLevelInvestmentPolicy(self.session, mining_states, settings)
+
+    def create_policy_6(self):
+        """
+        Aggressive multilevel investment policy  with periodic deletion
+        Level limit download follows the progression: a, a + a/2, ...
+        Level limit upload follows in times of download limit: 2, 3, 4, 5, 6, ...
+
+        Deletion policy:
+           delete if
+            - Time: 1H, Upload: < 5MB
+            - Time: 12H, Upload: < 50MB
+            - Time: 24H, Upload: < 100MB
+            - Time: 48H, Upload: < 250MB
+            - Time: 72H, Delete anyway
+
+        Torrents are replaced every 72hours even if they were performing well.
+        """
+        max_torrents = 1000
+        wait_time = 0   # No wait time
+        mining_states = [MiningState(0, max_torrents, 5 * MB, wait_time, upload_mode=False),
+                         MiningState(1, max_torrents, 5 * MB, wait_time, upload_mode=True, promotion_ratio=2),
+                         MiningState(2, max_torrents, 8 * MB, wait_time, upload_mode=False),
+                         MiningState(3, max_torrents, 8 * MB, wait_time, upload_mode=True, promotion_ratio=3),
+                         MiningState(4, max_torrents, 12 * MB, wait_time, upload_mode=False),
+                         MiningState(5, max_torrents, 12 * MB, wait_time, upload_mode=True, promotion_ratio=4),
+                         MiningState(6, max_torrents, 18 * MB, wait_time, upload_mode=False),
+                         MiningState(7, max_torrents, 18 * MB, wait_time, upload_mode=True, promotion_ratio=5),
+                         MiningState(8, max_torrents, 27 * MB, wait_time, upload_mode=False),
+                         MiningState(9, max_torrents, 27 * MB, wait_time, upload_mode=True, promotion_ratio=6),
+                         MiningState(10, max_torrents, 40 * MB, wait_time, upload_mode=False),
+                         MiningState(11, max_torrents, 40 * MB, wait_time, upload_mode=True, promotion_ratio=7),
+                         MiningState(12, max_torrents, 60 * MB, wait_time, upload_mode=False),
+                         MiningState(13, max_torrents, 60 * MB, wait_time, upload_mode=True, promotion_ratio=8),
+                         MiningState(14, max_torrents, 90 * MB, wait_time, upload_mode=False),
+                         MiningState(15, max_torrents, 90 * MB, wait_time, upload_mode=True, promotion_ratio=9),
+                         MiningState(16, max_torrents, 135 * MB, wait_time, upload_mode=False),
+                         MiningState(17, max_torrents, 135 * MB, wait_time, upload_mode=True, promotion_ratio=10),
+                         MiningState(18, max_torrents, 200 * MB, wait_time, upload_mode=False),
+                         MiningState(19, max_torrents, 200 * MB, wait_time, upload_mode=True),
+                         ]
+
+        settings = {
+            "url": self.url,
+            "output_file": self.output_file,
+            "max_torrents": max_torrents,
+            "scrape_interval": 15 * 60,
+            "max_storage": 50 * 1024 * MB
+        }
+
+        return MultiLevelGreedySpacePolicy(self.session, mining_states, settings)
 
     def makeService(self, options):
         """
