@@ -39,11 +39,11 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget {
-background-color: #444;
+background-color: #919191;
 border-radius: 4px;
 }
 QLabel {
-color: white;
+color: black;
 border-radius: 0px;
 }</string>
   </property>

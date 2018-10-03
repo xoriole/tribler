@@ -59,7 +59,7 @@
    <item>
     <widget class="QLabel" name="textlabel">
      <property name="styleSheet">
-      <string notr="true">color: #eee;
+      <string notr="true">color: black;
 font-size: 14px;</string>
      </property>
      <property name="text">

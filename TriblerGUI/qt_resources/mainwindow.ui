@@ -53,11 +53,11 @@ border: 0px solid black;
   <widget class="QWidget" name="central_widget">
    <property name="styleSheet">
     <string notr="true">QWidget {
-background-color: #202020;
+background-color: white;
 }
 
 TabButtonPanel QToolButton {
-color: #B5B5B5;
+color: #5e5e5e;
 border: none;
 border-bottom: 3px solid transparent;
 background: none;
@@ -65,12 +65,12 @@ font-size: 14px;
 }
 
 TabButtonPanel QToolButton::hover {
-color: white;
+color: black;
 }
 
 TabButtonPanel QToolButton::checked {
 border-bottom: 3px solid #e67300;
-color: white;
+color: black;
 }
 
 CircleButton {
@@ -85,18 +85,18 @@ border: 1px solid white;
 EllipseButton {
 border: 1px solid #B5B5B5;
 border-radius: 12px;
-color: white;
+color: black;
 }
 
 EllipseButton::hover {
 border: 1px solid white;
-color: white;
+color: black;
 }
 
 QLineEdit, QTextEdit {
-background-color: #303030;
+background-color: #c6c6c6;
 border: none;
-color: #C0C0C0;
+color: #5e5e5e;
 padding: 4px;
 }</string>
    </property>
@@ -138,7 +138,7 @@ padding: 4px;
       </property>
       <property name="styleSheet">
        <string notr="true">QWidget {
-background-color: #282828;
+background-color: white;
 border-bottom: 1px solid #242424;
 }
 
@@ -223,7 +223,7 @@ border: 2px solid white;
        <item>
         <widget class="QLabel" name="tribler_name">
          <property name="styleSheet">
-          <string notr="true">color: #e67300;
+          <string notr="true">color: #cc6600;
 font-size: 28px;
 font-weight: bold;
 font-family: &quot;Arial&quot;;</string>
@@ -274,8 +274,8 @@ font-family: &quot;Arial&quot;;</string>
          </property>
          <property name="styleSheet">
           <string notr="true">QLineEdit {
-background-color: #eee;
-border: none;
+background-color: white;
+border: 1px solid black;
 padding-left: 5px;
 border-radius: 14px;
 color: black;
@@ -329,7 +329,7 @@ color: black;
           <cursorShape>PointingHandCursor</cursorShape>
          </property>
          <property name="styleSheet">
-          <string notr="true">QWidget { background-color: #4c4c4c; border-radius: 4px; }</string>
+          <string notr="true">QWidget { background-color: #919191; border-radius: 4px; }</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <property name="spacing">
@@ -350,7 +350,7 @@ color: black;
           <item>
            <widget class="QLabel" name="token_balance_label">
             <property name="styleSheet">
-             <string notr="true">color: #ddd; font-weight: bold; font-size: 14px; border: none;</string>
+             <string notr="true">color: black; font-weight: bold; font-size: 14px; border: none;</string>
             </property>
             <property name="text">
              <string>0 MB</string>
@@ -363,7 +363,7 @@ color: black;
           <item>
            <widget class="QLabel" name="token_name_label">
             <property name="styleSheet">
-             <string notr="true">color: #ddd; font-size: 12px; border: none;</string>
+             <string notr="true">color: black; font-size: 12px; border: none;</string>
             </property>
             <property name="text">
              <string>Token balance</string>
@@ -540,11 +540,11 @@ background: none;</string>
         </property>
         <property name="styleSheet">
          <string notr="true">QWidget {
-background-color: #282828;
+background-color: white;
 }
 
 QPushButton {
-color: #B5B5B5;
+color: #5e5e5e;
 border: none;
 background: none;
 text-align: left;
@@ -554,12 +554,12 @@ border-left: 4px solid transparent;
 }
 
 QPushButton::hover {
-color: white;
+color: black;
 }
 
 QPushButton::checked {
 border-left: 4px solid #e67300;
-color: white;
+color: black;
 }</string>
         </property>
         <property name="locale">
@@ -1000,7 +1000,7 @@ color: white;
                </size>
               </property>
               <property name="styleSheet">
-               <string notr="true">background-color: #666;
+               <string notr="true">background-color: #919191;
 border-radius: 1px;
 margin-left: 12px;</string>
               </property>
@@ -1010,7 +1010,7 @@ margin-left: 12px;</string>
              <widget class="QLabel" name="left_menu_playlist_label">
               <property name="styleSheet">
                <string notr="true">border: none;
-color: #A0A0A0;
+color: #5e5e5e;
 font-size: 14px;
 padding-left: 16px;</string>
               </property>
@@ -1032,11 +1032,11 @@ padding-left: 16px;</string>
               </property>
               <property name="styleSheet">
                <string notr="true">QListWidget {
-color: white;
+color: black;
 border: none;
 }
 QListWidget:item:selected:active {
-background-color: #e67300;
+background-color: #cc6600;
 }</string>
               </property>
              </widget>
@@ -1072,7 +1072,7 @@ background-color: #e67300;
           <item>
            <widget class="QLabel" name="home_recommended_label">
             <property name="styleSheet">
-             <string notr="true">color: white;
+             <string notr="true">color: black;
 font-weight: bold;
 font-size: 20px;
 margin: 10px;</string>
@@ -1331,7 +1331,7 @@ padding-bottom: 10px;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;
@@ -1404,7 +1404,7 @@ margin: 10px;</string>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">color: #B5B5B5;
+                 <string notr="true">color: #5e5e5e;
 font-size: 16px;</string>
                 </property>
                 <property name="text">
@@ -1477,7 +1477,7 @@ padding-bottom: 4px;</string>
                  <item row="0" column="0">
                   <widget class="QLabel" name="new_channel_name_label">
                    <property name="styleSheet">
-                    <string notr="true">color: #B5B5B5;</string>
+                    <string notr="true">color: #5e5e5e;</string>
                    </property>
                    <property name="text">
                     <string>Channel name</string>
@@ -1509,7 +1509,7 @@ padding-bottom: 4px;</string>
                  <item row="2" column="0">
                   <widget class="QLabel" name="channel_description_label">
                    <property name="styleSheet">
-                    <string notr="true">color: #B5B5B5;</string>
+                    <string notr="true">color: #5e5e5e;</string>
                    </property>
                    <property name="text">
                     <string>Channel description</string>
@@ -1898,7 +1898,7 @@ padding-bottom: 4px;</string>
 border-top: 1px solid #555;
 }
 QLabel {
-color: #B5B5B5;
+color: #5e5e5e;
 font-size: 14px;
 }</string>
                 </property>
@@ -1925,7 +1925,7 @@ font-size: 14px;
                   <item>
                    <widget class="QLabel" name="label_7">
                     <property name="styleSheet">
-                     <string notr="true">color: #B5B5B5;
+                     <string notr="true">color: #5e5e5e;
 font-size: 14px;</string>
                     </property>
                     <property name="text">
@@ -1979,7 +1979,7 @@ font-size: 14px;</string>
                      <widget class="QLabel" name="label_8">
                       <property name="styleSheet">
                        <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                       </property>
                       <property name="text">
                        <string>Identifier</string>
@@ -1989,7 +1989,7 @@ color: white;</string>
                     <item row="2" column="1">
                      <widget class="QLabel" name="edit_channel_identifier_label">
                       <property name="styleSheet">
-                       <string notr="true">color: #B5B5B5;
+                       <string notr="true">color: #5e5e5e;
 font-size: 14px;</string>
                       </property>
                       <property name="text">
@@ -2004,7 +2004,7 @@ font-size: 14px;</string>
                      <widget class="QLabel" name="label_9">
                       <property name="styleSheet">
                        <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                       </property>
                       <property name="text">
                        <string>Name</string>
@@ -2014,7 +2014,7 @@ color: white;</string>
                     <item row="0" column="1">
                      <widget class="QLabel" name="edit_channel_overview_name_label">
                       <property name="styleSheet">
-                       <string notr="true">color: #B5B5B5;
+                       <string notr="true">color: #5e5e5e;
 font-size: 14px;</string>
                       </property>
                       <property name="text">
@@ -2026,7 +2026,7 @@ font-size: 14px;</string>
                      <widget class="QLabel" name="label_25">
                       <property name="styleSheet">
                        <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                       </property>
                       <property name="text">
                        <string>Description</string>
@@ -2042,7 +2042,7 @@ color: white;</string>
                        </sizepolicy>
                       </property>
                       <property name="styleSheet">
-                       <string notr="true">color: #B5B5B5;
+                       <string notr="true">color: #5e5e5e;
 font-size: 14px;</string>
                       </property>
                       <property name="text">
@@ -2107,7 +2107,7 @@ font-size: 14px;</string>
                     <item row="0" column="0">
                      <widget class="QLabel" name="edit_channel_settings_name_label">
                       <property name="styleSheet">
-                       <string notr="true">color: #B5B5B5;</string>
+                       <string notr="true">color: #5e5e5e;</string>
                       </property>
                       <property name="text">
                        <string>Channel name</string>
@@ -2127,7 +2127,7 @@ font-size: 14px;</string>
                     <item row="2" column="0">
                      <widget class="QLabel" name="edit_channel_settings_description_label">
                       <property name="styleSheet">
-                       <string notr="true">color: #B5B5B5;</string>
+                       <string notr="true">color: #5e5e5e;</string>
                       </property>
                       <property name="text">
                        <string>Channel description</string>
@@ -2290,10 +2290,10 @@ font-size: 14px;</string>
                    <widget class="LazyLoadList" name="edit_channel_torrents_list">
                     <property name="styleSheet">
                      <string notr="true">QListWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QListWidget::item:selected {
-background-color: #404040;
+background-color: #919191;
 }
 QListWidget::item {
 border-bottom: 1px solid #303030;
@@ -2469,10 +2469,10 @@ padding-right: 4px;</string>
                    <widget class="LazyLoadList" name="edit_channel_playlists_list">
                     <property name="styleSheet">
                      <string notr="true">QListWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QListWidget::item:selected {
-background-color: #404040;
+background-color: #919191;
 }
 QListWidget::item {
 border-bottom: 1px solid #303030;
@@ -2574,16 +2574,16 @@ border: none;
 font-size: 14px;
 }
 QTreeWidget::item {
-color: white;
+color: black;
 border-bottom: 1px solid #303030;
 padding-left: 14px;
 height: 40px;
 }
 QTreeWidget::item::selected {
-background-color: #404040;;
+background-color: #919191;;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QHeaderView {
 background-color: transparent;
@@ -2591,7 +2591,7 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 padding-left: 20px;
 font-size: 14px;
@@ -2770,7 +2770,7 @@ padding-right: 4px;</string>
                      <item row="0" column="0">
                       <widget class="QLabel" name="playlist_edit_name_label">
                        <property name="styleSheet">
-                        <string notr="true">color: #B5B5B5;</string>
+                        <string notr="true">color: #5e5e5e;</string>
                        </property>
                        <property name="text">
                         <string>Playlist name</string>
@@ -2790,7 +2790,7 @@ padding-right: 4px;</string>
                      <item row="2" column="0">
                       <widget class="QLabel" name="playlist_edit_description_label">
                        <property name="styleSheet">
-                        <string notr="true">color: #B5B5B5;</string>
+                        <string notr="true">color: #5e5e5e;</string>
                        </property>
                        <property name="text">
                         <string>Playlist description</string>
@@ -3065,7 +3065,7 @@ background: none;</string>
 font-size: 15px;
 font-weight: bold;
 margin-left: 5px;
-color: white;</string>
+color: black;</string>
                        </property>
                        <property name="text">
                         <string>Torrents in playlist 'bla'</string>
@@ -3079,10 +3079,10 @@ color: white;</string>
                    <widget class="LazyLoadList" name="edit_channel_playlist_torrents_list">
                     <property name="styleSheet">
                      <string notr="true">QListWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QListWidget::item:selected {
-background-color: #404040;
+background-color: #919191;
 }
 QListWidget::item {
 border-bottom: 1px solid #303030;
@@ -3241,7 +3241,7 @@ background: none;</string>
 font-size: 15px;
 font-weight: bold;
 margin-left: 5px;
-color: white;</string>
+color: black;</string>
                        </property>
                        <property name="text">
                         <string>Manage torrents in playlist 'bla'</string>
@@ -3255,16 +3255,16 @@ color: white;</string>
                    <widget class="QWidget" name="widget_15" native="true">
                     <property name="styleSheet">
                      <string notr="true">QListWidget {
-background-color: #303030;
+background-color: #c6c6c6;
 border: none;
 }
 QListWidget::item {
-color: white;
+color: black;
 }
 QToolButton {
 font-size: 16px;
 border-radius: 13px;
-color: white;
+color: black;
 }</string>
                     </property>
                     <layout class="QGridLayout" name="gridLayout_4">
@@ -3575,7 +3575,7 @@ background: none;</string>
 font-size: 15px;
 font-weight: bold;
 margin-left: 5px;
-color: white;</string>
+color: black;</string>
                        </property>
                        <property name="text">
                         <string>Create a new torrent</string>
@@ -3689,9 +3689,9 @@ color: white;</string>
                         <enum>Qt::CustomContextMenu</enum>
                        </property>
                        <property name="styleSheet">
-                        <string notr="true">background-color: #303030;
+                        <string notr="true">background-color: #c6c6c6;
 border: none;
-color: #C0C0C0;</string>
+color: #5e5e5e;</string>
                        </property>
                        <item>
                         <property name="text">
@@ -3708,7 +3708,7 @@ color: #C0C0C0;</string>
                      <item row="4" column="1">
                       <widget class="QCheckBox" name="seed_after_adding_checkbox">
                        <property name="styleSheet">
-                        <string notr="true">color: #bbb;</string>
+                        <string notr="true">color: #5e5e5e;</string>
                        </property>
                        <property name="text">
                         <string>Seed this torrent after adding it</string>
@@ -3950,7 +3950,7 @@ padding-right: 4px;</string>
               <item>
                <widget class="QLabel" name="channel_loading_text_label">
                 <property name="styleSheet">
-                 <string notr="true">color: #B5B5B5;
+                 <string notr="true">color: #5e5e5e;
 font-size: 18px;</string>
                 </property>
                 <property name="text">
@@ -4039,7 +4039,7 @@ font-size: 18px;</string>
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;</string>
@@ -4053,7 +4053,7 @@ font-weight: bold;</string>
               <widget class="QLabel" name="num_search_results_label">
                <property name="styleSheet">
                 <string notr="true">font-size: 14px;
-color: #B5B5B5;</string>
+color: #5e5e5e;</string>
                </property>
                <property name="text">
                 <string>- results</string>
@@ -4383,7 +4383,7 @@ color: #B5B5B5;</string>
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;</string>
@@ -4412,7 +4412,7 @@ font-weight: bold;</string>
              <item>
               <widget class="QLabel" name="channel_preview_label">
                <property name="styleSheet">
-                <string notr="true">color: #eee; font-size: 15px;</string>
+                <string notr="true">color: black; font-size: 15px;</string>
                </property>
                <property name="text">
                 <string>Preview</string>
@@ -4531,7 +4531,7 @@ background-color: transparent;
                    </size>
                   </property>
                   <property name="styleSheet">
-                   <string notr="true">color: #B5B5B5;
+                   <string notr="true">color: #5e5e5e;
 background-color: transparent;</string>
                   </property>
                   <property name="text">
@@ -4721,7 +4721,7 @@ background-color: transparent;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;
@@ -5105,12 +5105,12 @@ border-top: 1px solid #555;
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QStackedWidget QLabel, QStackedWidget QRadioButton, QStackedWidget QCheckBox {
-color: #B5B5B5;
+color: #5e5e5e;
 }
 QComboBox {
-background-color: #333333;
+background-color: #c6c6c6;
 border-radius: 4px;
-color: white;
+color: black;
 }
 QComboBox::drop-down {
 border: 0px;
@@ -5137,7 +5137,7 @@ border: 0px;
                    <widget class="QLabel" name="label_35">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Family filter</string>
@@ -5162,7 +5162,7 @@ color: white;</string>
                    <widget class="QLabel" name="label_4">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Download location</string>
@@ -5288,7 +5288,7 @@ settings?</string>
                    <widget class="QLabel" name="default_download_settings_header">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Default download settings</string>
@@ -5335,7 +5335,7 @@ seeding using proxies</string>
                    <widget class="QLabel" name="label_22">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Watch Folder</string>
@@ -5460,7 +5460,7 @@ color: white;</string>
                    <widget class="QLabel" name="label_31">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Tray icon</string>
@@ -5501,7 +5501,7 @@ color: white;</string>
                    <widget class="QLabel" name="label_4">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Torrent proxy settings</string>
@@ -5705,7 +5705,7 @@ color: white;</string>
                    <widget class="QLabel" name="label_15">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>BitTorrent features</string>
@@ -5777,7 +5777,7 @@ per download</string>
                    <widget class="QLabel" name="label_61">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>GUI/Core connection</string>
@@ -5849,7 +5849,7 @@ color: white;</string>
                    <widget class="QLabel" name="tribler_profile_header_label">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Bandwidth limits</string>
@@ -6039,7 +6039,7 @@ color: white;</string>
                    <widget class="QLabel" name="tribler_profile_header_label">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Seeding options</string>
@@ -6207,7 +6207,7 @@ color: white;</string>
                     </property>
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Anonymity</string>
@@ -6266,7 +6266,7 @@ color: white;</string>
                    <widget class="QLabel" name="label_17">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Proxy downloading</string>
@@ -6276,7 +6276,7 @@ color: white;</string>
                   <item>
                    <widget class="QWidget" name="widget_6" native="true">
                     <property name="styleSheet">
-                     <string notr="true">color: white;</string>
+                     <string notr="true">color: black;</string>
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_26">
                      <property name="leftMargin">
@@ -6355,7 +6355,7 @@ High anonymity</string>
                    <widget class="QLabel" name="label_3">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Token mining</string>
@@ -6425,7 +6425,7 @@ Token mining is the automated process of uploading to swarms in order increase y
                     </property>
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Bandwidth tokens emptying into another account (offline)</string>
@@ -6560,7 +6560,7 @@ color: orange;</string>
                    <widget class="QLabel" name="tribler_profile_header_label">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Developer mode</string>
@@ -6578,7 +6578,7 @@ color: white;</string>
                    <widget class="QLabel" name="tribler_profile_header_label">
                     <property name="styleSheet">
                      <string notr="true">font-weight: bold;
-color: white;</string>
+color: black;</string>
                     </property>
                     <property name="text">
                      <string>Log Directory</string>
@@ -6682,7 +6682,7 @@ color: white;</string>
                   <item row="4" column="0">
                    <widget class="QLabel" name="label_68">
                     <property name="styleSheet">
-                     <string notr="true">font-weight: bold;color: white;</string>
+                     <string notr="true">font-weight: bold;color: black;</string>
                     </property>
                     <property name="text">
                      <string>Resource Monitoring</string>
@@ -6699,7 +6699,7 @@ color: white;</string>
                   <item row="6" column="0">
                    <widget class="QLabel" name="label_66">
                     <property name="styleSheet">
-                     <string notr="true">font-weight: bold;color: white;</string>
+                     <string notr="true">font-weight: bold;color: black;</string>
                     </property>
                     <property name="text">
                      <string>CPU Priority [0-5]</string>
@@ -6800,7 +6800,7 @@ color: white;</string>
             <item>
              <widget class="QWidget" name="video_player_container" native="true">
               <property name="styleSheet">
-               <string notr="true">background-color: black;</string>
+               <string notr="true">background-color: white;</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_3">
                <property name="spacing">
@@ -6827,7 +6827,7 @@ color: white;</string>
                   </sizepolicy>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true">color: white;
+                  <string notr="true">color: black;
 margin: 8px;
 font-weight: bold;
 font-size: 14px;</string>
@@ -7141,7 +7141,7 @@ QSlider::sub-page:horizontal {
                         </sizepolicy>
                        </property>
                        <property name="styleSheet">
-                        <string notr="true">color: white;
+                        <string notr="true">color: black;
 font-size: 12px;</string>
                        </property>
                        <property name="text">
@@ -7322,7 +7322,7 @@ font-size: 12px;</string>
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;
@@ -7397,7 +7397,7 @@ margin: 10px;</string>
            <widget class="LazyLoadList" name="subscribed_channels_list">
             <property name="styleSheet">
              <string notr="true">QListWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QListWidget::item {
 border-bottom: 1px solid #303030;
@@ -7473,7 +7473,7 @@ border-top: 1px solid #555;
                 <string notr="true">margin: 10px;
 font-size: 20px;
 font-weight: bold;
-color: white;</string>
+color: black;</string>
                </property>
                <property name="text">
                 <string>Downloads</string>
@@ -7519,8 +7519,8 @@ background-color: transparent;
 border-radius: 3px;
 }
 QLineEdit:focus, QLineEdit::hover {
-background-color: #404040;
-color: white;
+background-color: #919191;
+color: black;
 }</string>
                </property>
                <property name="placeholderText">
@@ -8049,7 +8049,7 @@ padding-left: 2px;</string>
              <item row="0" column="0">
               <widget class="QSplitter" name="downloads_splitter">
                <property name="styleSheet">
-                <string notr="true">QSplitter::handle { background-color: #555; }</string>
+                <string notr="true">QSplitter::handle { background-color: #919191; }</string>
                </property>
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -8077,7 +8077,7 @@ padding-left: 2px;</string>
                  <item>
                   <widget class="QLabel" name="diskspace_usage">
                    <property name="styleSheet">
-                    <string notr="true">color: #B5B5B5; margin-left: 6px;</string>
+                    <string notr="true">color: #5e5e5e; margin-left: 6px;</string>
                    </property>
                    <property name="text">
                     <string/>
@@ -8096,15 +8096,15 @@ padding-left: 2px;</string>
     outline: 0;
     }
     QTreeWidget::item {
-    color: white;
+    color: black;
     height: 40px;
     border-bottom: 1px solid #303030;
     }
     QTreeWidget::item:hover {
-    background-color: #303030;
+    background-color: #c6c6c6;
     }
     QTreeWidget::item::selected {
-    background-color: #444;
+    background-color: #919191;
     }
     QHeaderView {
     background-color: transparent;
@@ -8112,13 +8112,13 @@ padding-left: 2px;</string>
     QHeaderView::section {
     background-color: transparent;
     border: none;
-    color: #B5B5B5;
+    color: #5e5e5e;
     padding: 10px;
     font-size: 14px;
     border-bottom: 1px solid #303030;
     }
     QHeaderView::section:hover {
-    color: white;
+    color: black;
     }
     QTableCornerButton::section {
     background-color: transparent;
@@ -8214,18 +8214,18 @@ padding-left: 2px;</string>
                <widget class="DownloadsDetailsTabWidget" name="download_details_widget">
                 <property name="styleSheet">
                  <string notr="true">QLabel {
-color: white;
+color: black;
 }
 QTabWidget {
 border: none;
 }
 QTabBar::tab {
-    color: white;
-    background-color: #555;
+    color: black;
+    background-color: #919191;
 }
 QTabBar::tab:selected {
-    color: #555;
-    background-color: #777;
+    color: #919191;
+    background-color: black;
 }</string>
                 </property>
                 <property name="currentIndex">
@@ -8324,7 +8324,7 @@ QTabBar::tab:selected {
                          </size>
                         </property>
                         <property name="styleSheet">
-                         <string notr="true">background-color: white;
+                         <string notr="true">background-color: #c6c6c6;
 margin-right: 10px;</string>
                         </property>
                         <layout class="QHBoxLayout" name="horizontalLayout_36"/>
@@ -8519,14 +8519,14 @@ border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: white;
+color: black;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QTreeWidget::item::selected {
-background-color: #444;
+background-color: #919191;
 }
 QHeaderView {
 background-color: transparent;
@@ -8534,7 +8534,7 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 font-size: 14px;
 border-bottom: 1px solid #303030;
@@ -8543,7 +8543,7 @@ QHeaderView::drop-down {
 color: red;
 }
 QHeaderView::section:hover {
-color: white;
+color: black;
 }
 QTableCornerButton::section {
 background-color: transparent;
@@ -8616,14 +8616,14 @@ border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: white;
+color: black;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QTreeWidget::item::selected {
-background-color: #444;
+background-color: #919191;
 }
 QHeaderView {
 background-color: transparent;
@@ -8631,7 +8631,7 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 font-size: 14px;
 border-bottom: 1px solid #303030;
@@ -8640,7 +8640,7 @@ QHeaderView::drop-down {
 color: red;
 }
 QHeaderView::section:hover {
-color: white;
+color: black;
 }
 QTableCornerButton::section {
 background-color: transparent;
@@ -8699,14 +8699,14 @@ border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: white;
+color: black;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
                                      QTreeWidget::item::selected {
-                                     background-color: #444;
+                                     background-color: #919191;
                                      }
                                      QHeaderView {
                                      background-color: transparent;
@@ -8714,7 +8714,7 @@ background-color: #303030;
                                      QHeaderView::section {
                                      background-color: transparent;
                                      border: none;
-                                     color: #B5B5B5;
+                                     color: #5e5e5e;
                                      padding: 10px;
                                      font-size: 14px;
                                      border-bottom: 1px solid #303030;
@@ -8723,7 +8723,7 @@ background-color: #303030;
                                      color: red;
                                      }
                                      QHeaderView::section:hover {
-                                     color: white;
+                                     color: black;
                                      }
                                      QTableCornerButton::section {
                                      background-color: transparent;
@@ -8897,7 +8897,7 @@ border-image: url(images/page_back.png) 0 0 0 0 stretch stretch;</string>
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;</string>
@@ -8933,7 +8933,7 @@ font-weight: bold;</string>
                </property>
                <property name="styleSheet">
                 <string notr="true">font-size: 14px;
-color: #B5B5B5;</string>
+color: #5e5e5e;</string>
                </property>
                <property name="text">
                 <string>23 items</string>
@@ -8963,10 +8963,10 @@ color: #B5B5B5;</string>
            <widget class="LazyLoadList" name="playlist_torrents_list">
             <property name="styleSheet">
              <string notr="true">QListWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QListWidget::item:selected {
-background-color: #404040;
+background-color: #919191;
 }
 QListWidget::item {
 border-bottom: 1px solid #303030;
@@ -9019,7 +9019,7 @@ border-top: 1px solid #555;
              </size>
             </property>
             <property name="styleSheet">
-             <string notr="true">color: white; font-size: 18px;
+             <string notr="true">color: black; font-size: 18px;
 padding:0 15px;</string>
             </property>
             <property name="text">
@@ -9067,8 +9067,8 @@ padding:0 15px;</string>
                </property>
                <property name="styleSheet">
                 <string notr="true">border-radius:16px;
-background-color:#e67300;
-color:#fff;
+background-color: #cc6600;
+color: black;
 padding:0 10px;
 text-transform:  uppercase;
 font-weight:bold;</string>
@@ -9134,7 +9134,7 @@ font-weight:bold;</string>
              </sizepolicy>
             </property>
             <property name="styleSheet">
-             <string notr="true">color: white; font-size: 18px;</string>
+             <string notr="true">color: black; font-size: 18px;</string>
             </property>
             <property name="text">
              <string>Discovering your first content...</string>
@@ -9178,7 +9178,7 @@ font-weight:bold;</string>
              </sizepolicy>
             </property>
             <property name="styleSheet">
-             <string notr="true">color: white; font-size: 14px;</string>
+             <string notr="true">color: black; font-size: 14px;</string>
             </property>
             <property name="text">
              <string>This process might take around a minute.</string>
@@ -9246,7 +9246,7 @@ font-weight:bold;</string>
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;
@@ -9283,7 +9283,7 @@ margin: 10px;</string>
                </property>
                <property name="styleSheet">
                 <string notr="true">font-size: 14px;
-color: #B5B5B5;</string>
+color: #5e5e5e;</string>
                </property>
                <property name="text">
                 <string>0 items</string>
@@ -9313,7 +9313,7 @@ color: #B5B5B5;</string>
            <widget class="LazyLoadList" name="discovered_channels_list">
             <property name="styleSheet">
              <string notr="true">QListWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QListWidget::item {
 border-bottom: 1px solid #303030;
@@ -9332,7 +9332,7 @@ border-top: 1px solid #555;
         </widget>
         <widget class="TrustPage" name="trust_page">
          <property name="styleSheet">
-          <string notr="true">QLabel { color: #eee; }</string>
+          <string notr="true">QLabel { color: black; }</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
           <property name="spacing">
@@ -9389,7 +9389,7 @@ border-top: 1px solid #555;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
                                             background-color: transparent;
                                             font-size: 20px;
                                             font-weight: bold;
@@ -9517,7 +9517,7 @@ border-top: 1px solid #555;
               <widget class="QWidget" name="trust_general_stats_box" native="true">
                <property name="styleSheet">
                 <string notr="true">QWidget { 
-background-color: #282828; border: 1px solid #555;
+background-color: white; border: 1px solid #555;
 }
 QLabel {
 border: none;
@@ -9619,7 +9619,7 @@ border: none;
               <widget class="QWidget" name="trust_interactions_stats_box" native="true">
                <property name="styleSheet">
                 <string notr="true">QWidget { 
-background-color: #282828; border: 1px solid #555;
+background-color: white; border: 1px solid #555;
 }
 QLabel {
 border: none;
@@ -9750,7 +9750,7 @@ border: none;
              <item>
               <widget class="QWidget" name="widget_10" native="true">
                <property name="styleSheet">
-                <string notr="true">background-color: #282828; border: 1px solid #555;</string>
+                <string notr="true">background-color: white; border: 1px solid #555;</string>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_13">
                 <property name="spacing">
@@ -9811,22 +9811,22 @@ border: none;
         </widget>
         <widget class="MarketPage" name="market_page">
          <property name="styleSheet">
-          <string notr="true">QLabel { color: #eee; }
+          <string notr="true">QLabel { color: black; }
 
 QTreeWidget {
 border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: #eee;
+color: black;
 height: 30px;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QTreeWidget::item::selected {
-background-color: #444;
+background-color: #919191;
 }
 QHeaderView {
 background-color: transparent;
@@ -9834,13 +9834,13 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 font-size: 14px;
 border-bottom: 1px solid #303030;
 }
 QHeaderView::section:hover {
-color: white;
+color: black;
 }
 QTableCornerButton::section {
 background-color: transparent;
@@ -9958,7 +9958,7 @@ background-color: transparent;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
                                             background-color: transparent;
                                             font-size: 20px;
                                             font-weight: bold;</string>
@@ -10148,9 +10148,9 @@ background-color: transparent;
              <cursorShape>PointingHandCursor</cursorShape>
             </property>
             <property name="styleSheet">
-             <string notr="true">background-color: #666;
+             <string notr="true">background-color: #919191;
 border: none;
-color: white;
+color: black;
 font-size: 12px;
 </string>
             </property>
@@ -10188,7 +10188,7 @@ font-size: 12px;
                </property>
                <property name="styleSheet">
                 <string notr="true">background: none;
-color: white;
+color: black;
 border-radius: 14px;
 border: 1px solid white;
 font-size: 12px;</string>
@@ -10412,7 +10412,7 @@ font-weight: bold;</string>
                          </property>
                          <property name="styleSheet">
                           <string notr="true">background: none;
-color: white;
+color: black;
 border-radius: 14px;
 border: 1px solid white;
 font-size: 12px;</string>
@@ -10584,7 +10584,7 @@ font-weight: bold;</string>
                          </property>
                          <property name="styleSheet">
                           <string notr="true">background: none;
-color: white;
+color: black;
 border-radius: 14px;
 border: 1px solid white;
 font-size: 12px;</string>
@@ -10766,22 +10766,22 @@ font-size: 12px;</string>
         </widget>
         <widget class="MarketTransactionsPage" name="market_transactions_page">
          <property name="styleSheet">
-          <string notr="true">QLabel { color: #eee; }
+          <string notr="true">QLabel { color: black; }
 
 QTreeWidget {
 border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: #eee;
+color: black;
 height: 30px;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QTreeWidget::item::selected {
-background-color: #444;
+background-color: #919191;
 }
 QHeaderView {
 background-color: transparent;
@@ -10789,13 +10789,13 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 font-size: 14px;
 border-bottom: 1px solid #303030;
 }
 QHeaderView::section:hover {
-color: white;
+color: black;
 }
 QTableCornerButton::section {
 background-color: transparent;
@@ -10913,7 +10913,7 @@ background-color: transparent;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;</string>
@@ -10948,7 +10948,7 @@ font-weight: bold;</string>
               <widget class="QSplitter" name="transactions_payment_splitter">
                <property name="styleSheet">
                 <string notr="true">QSplitter::handle {
-background-color: #666;
+background-color: #919191;
 }</string>
                </property>
                <property name="orientation">
@@ -11086,15 +11086,15 @@ border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: #eee;
+color: black;
 height: 30px;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QTreeWidget::item::selected {
-background-color: #444;
+background-color: #919191;
 }
 QHeaderView {
 background-color: transparent;
@@ -11102,13 +11102,13 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 font-size: 14px;
 border-bottom: 1px solid #303030;
 }
 QHeaderView::section:hover {
-color: white;
+color: black;
 }
 QTableCornerButton::section {
 background-color: transparent;
@@ -11232,7 +11232,7 @@ background-color: transparent;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
                                             background-color: transparent;
                                             font-size: 20px;
                                             font-weight: bold;</string>
@@ -11252,12 +11252,12 @@ background-color: transparent;
 background: none;
 border: 1px solid #999;
 border-radius: 6px;
-color: #bbb;
+color: #5e5e5e;
 font-size: 16px;
 }
 
 QPushButton::hover, QPushButton::checked {
-background-color: #333;
+background-color: #c6c6c6;
 }</string>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_46">
@@ -11549,18 +11549,18 @@ background-color: #333;
            <widget class="QTabWidget" name="wallet_info_tabs">
             <property name="styleSheet">
              <string notr="true">QLabel {
-color: white;
+color: black;
 }
 QTabWidget {
 border: none;
 }
 QTabBar::tab {
-    color: white;
-    background-color: #555;
+    color: black;
+    background-color: #919191;
 }
 QTabBar::tab:selected {
-    color: #555;
-    background-color: #777;
+    color: #919191;
+    background-color: #919191;
 }</string>
             </property>
             <property name="currentIndex">
@@ -11692,22 +11692,22 @@ QTabBar::tab:selected {
         </widget>
         <widget class="MarketOrdersPage" name="market_orders_page">
          <property name="styleSheet">
-          <string notr="true">QLabel { color: #eee; }
+          <string notr="true">QLabel { color: black; }
 
 QTreeWidget {
 border: none;
 font-size: 13px;
 }
 QTreeWidget::item {
-color: #eee;
+color: black;
 height: 30px;
 border-bottom: 1px solid #303030;
 }
 QTreeWidget::item:hover {
-background-color: #303030;
+background-color: #c6c6c6;
 }
 QTreeWidget::item::selected {
-background-color: #444;
+background-color: #919191;
 }
 QHeaderView {
 background-color: transparent;
@@ -11715,13 +11715,13 @@ background-color: transparent;
 QHeaderView::section {
 background-color: transparent;
 border: none;
-color: #B5B5B5;
+color: #5e5e5e;
 padding: 10px;
 font-size: 14px;
 border-bottom: 1px solid #303030;
 }
 QHeaderView::section:hover {
-color: white;
+color: black;
 }
 QTableCornerButton::section {
 background-color: transparent;
@@ -11839,7 +11839,7 @@ background-color: transparent;
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: #eee;
+                <string notr="true">color: black;
 background-color: transparent;
 font-size: 20px;
 font-weight: bold;</string>
@@ -11916,7 +11916,7 @@ font-weight: bold;</string>
      <widget class="QWidget" name="tribler_status_bar" native="true">
       <property name="styleSheet">
        <string notr="true">background-color: #cc6600;
-color: #eee;</string>
+color: black;</string>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_55">
        <property name="spacing">

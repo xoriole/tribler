@@ -36,7 +36,7 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget {
-background-color: #666;
+background-color: #919191;
 }</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
@@ -164,7 +164,7 @@ background-color: #666;
          <property name="styleSheet">
           <string notr="true">border: 1px solid #B5B5B5;
 border-radius: 9px;
-color: #B5B5B5;
+color: #5e5e5e;
 font-size: 12px;
 background-color: transparent;</string>
          </property>
@@ -185,7 +185,7 @@ background-color: transparent;</string>
           </sizepolicy>
          </property>
          <property name="styleSheet">
-          <string notr="true">color: #eee;
+          <string notr="true">color: black;
 border: none;
 background-color: transparent;
 font-size: 15px;</string>

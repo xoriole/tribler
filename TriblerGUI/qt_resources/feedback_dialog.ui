@@ -39,38 +39,38 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget {
-background-color: #202020;
+background-color: white;
 border: none;
 }
 
 QLabel {
-color: #B5B5B5;
+color: #5e5e5e;
 }
 
 EllipseButton {
 border: 1px solid #B5B5B5;
 border-radius: 13px;
-color: white;
+color: black;
 }
 
 EllipseButton::hover {
 border: 1px solid white;
-color: white;
+color: black;
 }
 
 QLineEdit, QPlainTextEdit {
-background-color: #303030;
+background-color: #c6c6c6;
 border: none;
-color: #C0C0C0;
+color: #5e5e5e;
 padding: 4px;
 }
 
 QTreeWidget::item {
-color: #C0C0C0;
+color: #5e5e5e;
 }
 
 QTreeWidget {
-background-color: #303030;
+background-color: #c6c6c6;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">

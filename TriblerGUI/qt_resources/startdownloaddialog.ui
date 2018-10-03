@@ -39,19 +39,19 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget {
-background-color: #333333;
+background-color: #c6c6c6;
 border-radius: 2px;
 }
 QToolButton {
 border: 1px solid #B5B5B5;
 border-radius: 12px;
-color: white;
+color: black;
 padding-left: 4px;
 padding-right: 4px;
 }
 QToolButton::hover {
 border: 1px solid white;
-color: white;
+color: black;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -122,7 +122,7 @@ color: white;
         </property>
         <property name="styleSheet">
          <string notr="true">font-size: 14px;
-color: white;</string>
+color: black;</string>
         </property>
         <property name="text">
          <string>Download torrent</string>
@@ -150,7 +150,7 @@ color: white;</string>
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">color: #B5B5B5;</string>
+         <string notr="true">color: #5e5e5e;</string>
         </property>
         <property name="text">
          <string>my_fancy_torrent</string>
@@ -194,9 +194,9 @@ color: white;</string>
            </property>
            <property name="styleSheet">
             <string notr="true">QComboBox {
-background-color: #444;
+background-color: #919191;
 border: none;
-color: #C0C0C0;
+color: #5e5e5e;
 padding: 4px;
 }
 QComboBox::drop-down {
@@ -205,7 +205,7 @@ border: 1px solid #999;
 border-radius: 2px;
 }
 QComboBox QAbstractItemView {
-selection-background-color: #707070;
+selection-background-color: #919191;
 }</string>
            </property>
            <property name="editable">
@@ -281,7 +281,7 @@ selection-background-color: #707070;
             </sizepolicy>
            </property>
            <property name="styleSheet">
-            <string notr="true">border: None; color: #e67300;</string>
+            <string notr="true">border: None; color: #cc6600;</string>
            </property>
            <property name="text">
             <string>Download already exists.</string>
@@ -382,10 +382,10 @@ selection-background-color: #707070;
          <string notr="true">QTreeWidget {
 border: none;
 font-size: 13px;
-background-color: #444;
+background-color: #919191;
 }
 QTreeWidget::item {
-color: white;
+color: black;
 }
 QHeaderView {
 background-color: transparent;
@@ -395,7 +395,7 @@ background-color: transparent;
 border: none;
 padding-left: 10px;
 height: 26px;
-color: #B5B5B5;
+color: #5e5e5e;
 font-size: 14px;
 border-bottom: 1px solid #303030;
 }
@@ -453,7 +453,7 @@ background-color: transparent;
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">color: white;</string>
+         <string notr="true">color: black;</string>
         </property>
         <property name="text">
          <string>Loading files...</string>
@@ -478,7 +478,7 @@ background-color: transparent;
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">color: #B5B5B5;</string>
+         <string notr="true">color: #5e5e5e;</string>
         </property>
         <property name="text">
          <string>Download anonymous using proxies</string>
@@ -491,7 +491,7 @@ background-color: transparent;
          <bool>true</bool>
         </property>
         <property name="styleSheet">
-         <string notr="true">color: #B5B5B5;</string>
+         <string notr="true">color: #5e5e5e;</string>
         </property>
         <property name="text">
          <string>Seed encrypted using proxies</string>

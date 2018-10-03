@@ -39,19 +39,19 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget {
-background-color: #333333;
+background-color: #c6c6c6;
 border-radius: 2px;
 }
 QToolButton {
 border: 1px solid #B5B5B5;
 border-radius: 12px;
-color: white;
+color: black;
 padding-left: 4px;
 padding-right: 4px;
 }
 QToolButton::hover {
 border: 1px solid white;
-color: white;
+color: black;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -67,7 +67,7 @@ color: white;
       </sizepolicy>
      </property>
      <property name="styleSheet">
-      <string notr="true">color: #ddd; font-weight: bold; font-size: 18px;</string>
+      <string notr="true">color: black; font-weight: bold; font-size: 18px;</string>
      </property>
      <property name="text">
       <string>Wallet name</string>
@@ -109,13 +109,13 @@ margin-right: 12px;</string>
     <widget class="QWidget" name="input_container" native="true">
      <property name="styleSheet">
       <string notr="true">QLabel {
-color: #ddd;
+color: black;
 }
 
 QLineEdit {
-background-color: #444;
+background-color: #919191;
 border: none;
-color: #C0C0C0;
+color: #5e5e5e;
 padding: 4px;
 }</string>
      </property>
