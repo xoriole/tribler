@@ -89,7 +89,8 @@ class CoreManager(QObject):
                 core_env["CORE_API_PORT"] = "%s" % self.api_port
             if not core_args:
                 core_args = sys.argv
-            self.core_process = subprocess.Popen([sys.executable] + core_args, env=core_env)
+            self.core_process = subprocess.Popen([sys.executable] + core_args, env=core_env,
+                                                 stdout=sys.stdout, stderr=sys.stderr)
         self.check_core_ready()
 
     def check_core_ready(self):
