@@ -88,7 +88,7 @@ class TriblerWindow(QMainWindow):
                                 self.start_time)
         dialog.show()
 
-    def __init__(self, core_args=None, core_env=None, api_port=None):
+    def __init__(self, core_args=None, core_env=None, api_port=None, remote_url=None):
         QMainWindow.__init__(self)
 
         QCoreApplication.setOrganizationDomain("nl")
@@ -98,13 +98,14 @@ class TriblerWindow(QMainWindow):
 
         self.gui_settings = QSettings()
         api_port = api_port or int(get_gui_setting(self.gui_settings, "api_port", DEFAULT_API_PORT))
-        dispatcher.update_worker_settings(port=api_port)
+        remote_url = remote_url if remote_url else "http://localhost:%d" % api_port
+        dispatcher.update_base_url(base_url=remote_url)
 
         self.navigation_stack = []
         self.tribler_started = False
         self.tribler_settings = None
         self.debug_window = None
-        self.core_manager = CoreManager(api_port)
+        self.core_manager = CoreManager(remote_url=remote_url)
         self.pending_requests = {}
         self.pending_uri_requests = []
         self.download_uri = None

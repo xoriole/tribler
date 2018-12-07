@@ -3,8 +3,9 @@ import logging
 from threading import RLock
 from time import time
 
-from PyQt5.QtCore import QUrl, pyqtSignal, QIODevice, QBuffer, QObject
-from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
+from PyQt5.QtCore import QUrl, pyqtSignal, QIODevice, QBuffer, QObject, QFile
+from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QSslCertificate, QSslSocket, QSslKey, QSsl, \
+    QSslConfiguration, QNetworkConfiguration, QNetworkReply
 
 import Tribler.Core.Utilities.json_util as json
 from TriblerGUI.defs import BUTTON_TYPE_NORMAL, DEFAULT_API_PORT, DEFAULT_API_PROTOCOL, DEFAULT_API_HOST
@@ -175,19 +176,14 @@ performed_requests = deque(maxlen=200)
 
 class TriblerRequestDispatcher(object):
 
-    def __init__(self, pool_size=5):
+    def __init__(self, pool_size=5, base_url=None):
         self.pool_size = pool_size
         self.request_workers = []
         self.num_requests = 0
+        self.base_url = base_url if base_url else "http://localhost:8085"
 
-        self.default_protocol = None
-        self.default_host = None
-        self.default_port = None
-
-    def update_worker_settings(self, protocol=None, host=None, port=None):
-        self.default_protocol = protocol
-        self.default_host = host
-        self.default_port = port
+    def update_base_url(self, base_url):
+        self.base_url = base_url
 
     def perform_request(self, request_manager, endpoint, reply_callback, data, method):
         self.num_requests += 1
@@ -196,14 +192,8 @@ class TriblerRequestDispatcher(object):
         num_worker = len(self.request_workers)
         if num_worker < self.pool_size:
             for _ in xrange(self.pool_size - num_worker):
-                worker = TriblerRequestWorker()
+                worker = TriblerRequestWorker(self.base_url)
                 self.request_workers.append(worker)
-                if self.default_protocol:
-                    worker.update_protocol(self.default_protocol)
-                if self.default_host:
-                    worker.update_host(self.default_host)
-                if self.default_port:
-                    worker.update_port(self.default_port)
 
         network_reply = self.request_workers[worker_index].perform_request(endpoint, reply_callback, data, method)
         request_manager.set_reply_handle(network_reply)
@@ -280,6 +270,8 @@ class TriblerRequestManager(QObject):
 
     def on_finished(self, reply, capture_errors):
         self.status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+
+        print "status code:", self.status_code, reply.errorString()
         request_queue.parse_queue()
 
         if not reply.isOpen() or not self.status_code:
@@ -344,7 +336,7 @@ class TriblerRequestWorker(QNetworkAccessManager):
     pyqt signal is fired when the response data is ready.
     """
 
-    def __init__(self):
+    def __init__(self, base_url):
         QNetworkAccessManager.__init__(self)
         self.dispatch_map = {
             'GET': self.perform_get,
@@ -353,21 +345,10 @@ class TriblerRequestWorker(QNetworkAccessManager):
             'DELETE': self.perform_delete,
             'POST': self.perform_post
         }
-        self.protocol = DEFAULT_API_PROTOCOL
-        self.host = DEFAULT_API_HOST
-        self.port = DEFAULT_API_PORT
-
-    def update_host(self, host):
-        self.host = host
-
-    def update_port(self, port):
-        self.port = port
-
-    def update_protocol(self, protocol):
-        self.protocol = protocol
+        self.base_url = base_url
 
     def get_base_url(self):
-        return "%s://%s:%d/" % (self.protocol, self.host, self.port)
+        return self.base_url
 
     def perform_request(self, endpoint, reply_callback, data, method):
         """
@@ -380,7 +361,7 @@ class TriblerRequestWorker(QNetworkAccessManager):
         if endpoint.startswith("http:") or endpoint.startswith("https:"):
             url = endpoint
         else:
-            url = self.get_base_url() + endpoint
+            url = self.get_base_url() + '/' + endpoint
 
         log = [endpoint, method, data, time(), 0]
         performed_requests.append(log)

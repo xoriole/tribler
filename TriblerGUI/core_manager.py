@@ -29,7 +29,7 @@ class CoreManager(QObject):
     tribler_stopped = pyqtSignal()
     core_state_update = pyqtSignal(str)
 
-    def __init__(self, api_port):
+    def __init__(self, api_port=None, remote_url=None):
         QObject.__init__(self, None)
 
         self.base_path = get_base_path()
@@ -39,7 +39,8 @@ class CoreManager(QObject):
         self.request_mgr = None
         self.core_process = None
         self.api_port = api_port
-        self.events_manager = EventRequestManager(self.api_port)
+        self.base_url = remote_url if remote_url else "http://localhost:%d" % api_port
+        self.events_manager = EventRequestManager(self.base_url)
 
         self.shutting_down = False
         self.recorded_stderr = ""
@@ -78,7 +79,9 @@ class CoreManager(QObject):
         self.events_manager.reply.error.connect(on_request_error)
 
     def start_tribler_core(self, core_args=None, core_env=None):
-        if not START_FAKE_API:
+        print "start core, args:%s, env:%s" % (core_args, core_env)
+        print "api:%s, remote:%s" % (self.api_port, self.base_url)
+        if not START_FAKE_API and self.api_port:
             if not core_env:
                 system_encoding = sys.getfilesystemencoding()
                 core_env = {(k.encode(system_encoding) if isinstance(k, unicode) else str(k))

@@ -36,9 +36,10 @@ class EventRequestManager(QNetworkAccessManager):
     credit_mining_signal = pyqtSignal(object)
     tribler_shutdown_signal = pyqtSignal(str)
 
-    def __init__(self, api_port):
+    def __init__(self, base_url):
         QNetworkAccessManager.__init__(self)
-        url = QUrl("http://localhost:%d/events" % api_port)
+        url = QUrl("%s/events" % base_url)
+        print "url:", url
         self.request = QNetworkRequest(url)
         self.failed_attempts = 0
         self.connect_timer = QTimer()

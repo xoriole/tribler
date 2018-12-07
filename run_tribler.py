@@ -104,17 +104,13 @@ if __name__ == "__main__":
             # Exit if we cant read/write files, etc.
             check_environment()
 
-            should_kill_other_tribler_instances()
-
-            check_free_space()
-
-            # Set up logging
-            setup_gui_logging()
-
             from TriblerGUI.tribler_app import TriblerApplication
             from TriblerGUI.tribler_window import TriblerWindow
 
             app = TriblerApplication("triblerapp", sys.argv)
+
+            # Check remote url from command arguments
+            remote_url = None #"http://localhost:8085"
 
             if app.is_running():
                 for arg in sys.argv[1:]:
@@ -124,7 +120,7 @@ if __name__ == "__main__":
                         app.send_message(arg)
                 sys.exit(1)
 
-            window = TriblerWindow()
+            window = TriblerWindow(remote_url=remote_url)
             window.setWindowTitle("Tribler")
             app.set_activation_window(window)
             app.parse_sys_args(sys.argv)
