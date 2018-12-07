@@ -1,7 +1,7 @@
 import logging
 import os
 from traceback import format_tb
-from twisted.internet import reactor
+from twisted.internet import reactor, endpoints
 from twisted.internet.defer import maybeDeferred
 from twisted.python.compat import intToBytes
 from twisted.python.failure import Failure
@@ -17,12 +17,14 @@ class RESTManager(TaskManager):
     This class is responsible for managing the startup and closing of the Tribler HTTP API.
     """
 
-    def __init__(self, session):
+    def __init__(self, session, cert_file=None, cert_private_key=None):
         super(RESTManager, self).__init__()
         self._logger = logging.getLogger(self.__class__.__name__)
         self.session = session
         self.site = None
         self.root_endpoint = None
+        self.cert_private_key = cert_private_key
+        self.cert_file = cert_file
 
     def start(self):
         """
@@ -31,7 +33,14 @@ class RESTManager(TaskManager):
         self.root_endpoint = RootEndpoint(self.session)
         site = server.Site(resource=self.root_endpoint)
         site.requestFactory = RESTRequest
-        self.site = reactor.listenTCP(self.session.config.get_http_api_port(), site, interface="127.0.0.1")
+
+        if self.cert_private_key and self.cert_file:
+            https_server = endpoints.serverFromString(reactor, 'ssl:%d:interface=%s:certKey=%s:privateKey=%s' %
+                                                      (self.session.config.get_http_api_port(), "0.0.0.0",
+                                                       self.cert_file, self.cert_private_key))
+            self.site = https_server.listen(site)
+        else:
+            self.site = reactor.listenTCP(self.session.config.get_http_api_port(), site, interface="127.0.0.1")
 
         # REST Manager does not accept any new requests if Tribler is shutting down.
         # Note that environment variable 'TRIBLER_SHUTTING_DOWN' is set to 'TRUE' (string)

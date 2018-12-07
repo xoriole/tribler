@@ -87,6 +87,14 @@ class Session(object):
 
         self.autoload_discovery = autoload_discovery
 
+        # Support HTTPS
+        self.cert_file = None
+        self.cert_private_key = None
+
+    def set_https_config(self, certificate_file, certificate_private_key):
+        self.cert_file = certificate_file
+        self.cert_private_key = certificate_private_key
+
     def create_state_directory_structure(self):
         """Create directory structure of the state directory."""
         def create_dir(path):
@@ -472,7 +480,7 @@ class Session(object):
         """
         # Start the REST API before the upgrader since we want to send interesting upgrader events over the socket
         if self.config.get_http_api_enabled():
-            self.lm.api_manager = RESTManager(self)
+            self.lm.api_manager = RESTManager(self, cert_file=self.cert_file, cert_private_key=self.cert_private_key)
             self.readable_status = STATE_START_API
             self.lm.api_manager.start()
 
