@@ -20,13 +20,15 @@ from Tribler.pyipv8.ipv8.taskmanager import TaskManager
 
 
 class CreditMiningTorrent(object):
-    def __init__(self, infohash, name, download=None, state=None):
+    def __init__(self, infohash, name, download=None, state=None, level=0):
         self.infohash = infohash
         self.name = name
         self.download = download
         self.state = state
+        self.level = level
         self.sources = set()
         self.force_checked = False
+        self.mining_policy = None
 
 
 class CreditMiningSettings(object):
@@ -44,6 +46,31 @@ class CreditMiningSettings(object):
         self.max_disk_space = config.get_credit_mining_disk_space() if config else 50 * 1024 ** 3
         self.low_disk_space = 1000 * 1024 ** 2
         self.save_path = os.path.join(config.get_default_destination_dir(), 'credit_mining')
+
+
+class CreditMiningLevel(object):
+    """
+    Represents the credit mining level for a torrent.
+    """
+
+    def __init__(self, level, max_torrents, download_limit, lifetime, promo_ratio=1, upload_mode=False):
+        """
+        Constructor
+        :param level: Level number eg. 1, 2, 3, ...
+        :param max_torrents: Maximum number of torrents that be in the level
+        :param download_limit: Download limit for a torrent in this level
+        :param lifetime: Maximum time a torrent can stay in this level before being promoted or deleted. Zero value
+                         Zero value implies infinite lifetime.
+        :param promo_ratio: Upload/download ratio to be promoted
+        :param upload_mode: Boolean (True/False)
+        """
+        self.level = level
+        self.max_torrents = max_torrents
+        self.download_limit = download_limit
+        self.lifetime = lifetime
+        self.upload_mode = upload_mode
+        self.promo_ratio = promo_ratio
+        self.promo_threshold = self.promo_ratio * self.download_limit
 
 
 class CreditMiningManager(TaskManager):
@@ -266,30 +293,46 @@ class CreditMiningManager(TaskManager):
                         bytes_todo = length * (1.0 - progress)
                         if bytes_left >= bytes_scheduled + bytes_todo:
                             to_start.append(torrent)
+                            torrent.mining_policy = self.policies[policy_index]
                             bytes_scheduled += bytes_todo
                             break
                 iterations += 1
 
             started = stopped = 0
             for infohash, torrent in self.torrents.items():
-                if not torrent.download:
+                if not torrent.download or not torrent.mining_policy:
                     continue
-                status = torrent.download.get_state().get_status()
-                if torrent in to_start and status == DLSTATUS_STOPPED:
-                    self._logger.info('Starting torrent %s', torrent.infohash)
-                    torrent.download.restart()
-                    started += 1
-                elif torrent not in to_start and status not in [DLSTATUS_STOPPED, DLSTATUS_STOPPED_ON_ERROR]:
-                    # If the swarm appears to be dead, remove it altogether
-                    if torrent.state and torrent.state.get_availability() < 1:
-                        self._logger.info('Removing torrent %s', torrent.infohash)
+
+                if torrent.mining_policy.get_name() == 'InvestmentPolicy':
+                    mining_policy = torrent.mining_policy
+                    if mining_policy.should_remove(torrent):
                         del self.torrents[infohash]
                         self.session.remove_download(torrent.download, remove_state=True,
                                                      remove_content=True, hidden=True)
                     else:
-                        self._logger.info('Stopping torrent %s', torrent.infohash)
-                        torrent.download.stop()
-                    stopped += 1
+                        if mining_policy.is_final_level(torrent.level):
+                            continue
+
+                        # Try promoting torrent to the next level
+                        mining_policy.promote_torrent(torrent)
+
+                else:
+                    status = torrent.download.get_state().get_status()
+                    if torrent in to_start and status == DLSTATUS_STOPPED:
+                        self._logger.info('Starting torrent %s', torrent.infohash)
+                        torrent.download.restart()
+                        started += 1
+                    elif torrent not in to_start and status not in [DLSTATUS_STOPPED, DLSTATUS_STOPPED_ON_ERROR]:
+                        # If the swarm appears to be dead, remove it altogether
+                        if torrent.state and torrent.state.get_availability() < 1:
+                            self._logger.info('Removing torrent %s', torrent.infohash)
+                            del self.torrents[infohash]
+                            self.session.remove_download(torrent.download, remove_state=True,
+                                                         remove_content=True, hidden=True)
+                        else:
+                            self._logger.info('Stopping torrent %s', torrent.infohash)
+                            torrent.download.stop()
+                        stopped += 1
             self._logger.info('Started %d torrent(s), stopped %d torrent(s)', started, stopped)
 
     def monitor_downloads(self, dslist):
