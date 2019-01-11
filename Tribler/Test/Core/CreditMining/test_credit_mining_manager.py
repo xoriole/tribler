@@ -3,6 +3,7 @@ Module of Credit mining function testing.
 
 Author(s): Mihai Capota, Ardhi Putra
 """
+import logging
 import os
 import sys
 
@@ -48,7 +49,9 @@ class FakeTorrent(object):
 class FakePolicy(BasePolicy):
 
     def __init__(self, reverse):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self.reverse = reverse
+        self.torrents = {}
 
     def sort(self, torrents):
         return sorted(torrents, key=lambda t: t.infohash, reverse=self.reverse)

@@ -229,13 +229,17 @@ class DownloadsPage(QWidget):
 
         bytes_max = self.window().tribler_settings["credit_mining"]["max_disk_space"]
         bytes_used = 0
+        total_up = total_down = 0
         for download in self.downloads["downloads"]:
             if download["credit_mining"] and \
                download["status"] in ("DLSTATUS_DOWNLOADING", "DLSTATUS_SEEDING",
                                       "DLSTATUS_STOPPED", "DLSTATUS_STOPPED_ON_ERROR"):
                 bytes_used += download["progress"] * download["size"]
-        self.window().diskspace_usage.setText("Current disk space usage %s / %s" % (format_size(float(bytes_used)),
-                                                                                    format_size(float(bytes_max))))
+                total_up += download["total_up"]
+                total_down += download["total_down"]
+        self.window().diskspace_usage.setText("Disk usage: %s / %s \tUpload: %.3f MB \tDownload: %.3f MB" %
+                                              (format_size(float(bytes_used)), format_size(float(bytes_max)),
+                                               total_up/1048576.0, total_down/1028576.0))
 
     @staticmethod
     def start_download_enabled(download_widgets):
