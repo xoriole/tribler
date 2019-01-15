@@ -66,7 +66,7 @@ class StartDownloadDialog(DialogContainer):
             image: url('%s');
         }
         """ % get_image_path('down_arrow_input.png'))
-
+        self.request_mgr = TriblerRequestManager()
         if self.window().tribler_settings:
             # Set the most recent download locations in the QComboBox
             current_settings = get_gui_setting(self.window().gui_settings, "recent_download_locations", "")
@@ -87,12 +87,13 @@ class StartDownloadDialog(DialogContainer):
 
         self.dialog_widget.safe_seed_checkbox.setEnabled(self.dialog_widget.anon_download_checkbox.isChecked())
 
-        self.perform_files_request()
         self.dialog_widget.files_list_view.setHidden(True)
         self.dialog_widget.download_files_container.setHidden(True)
         self.dialog_widget.adjustSize()
         self.on_anon_download_state_changed(None)
-        self.request_mgr = None
+
+        self.request_mgr = TriblerRequestManager()
+        self.perform_files_request()
 
         self.on_main_window_resize()
 
@@ -113,7 +114,8 @@ class StartDownloadDialog(DialogContainer):
         return included_files
 
     def perform_files_request(self):
-        self.request_mgr = TriblerRequestManager()
+        if self.request_mgr:
+            self.request_mgr = TriblerRequestManager()
         self.request_mgr.perform_request("torrentinfo?uri=%s" % quote_plus_unicode(self.download_uri),
                                          self.on_received_metainfo, capture_errors=False)
 
