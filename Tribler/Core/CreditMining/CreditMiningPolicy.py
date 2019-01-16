@@ -4,6 +4,7 @@ Author(s): Egbert Bouman, Mihai Capota, Elric Milon, Ardhi Putra
 """
 from __future__ import absolute_import
 import logging
+import math
 import random
 import time
 
@@ -160,7 +161,8 @@ class InvestmentPolicy(BasePolicy):
             The value of investment in each state follows the following half series:
                 a, a + a/2, ...
             The inital values of a = 5 MB
-        :return:
+            Then the sequence becomes 5, 7, 10, 15, 22, 33, 49, 73, 109, 163, ...
+        :return: Dict of investment states
         """
         investment = 5
         states = {}
@@ -185,8 +187,9 @@ class InvestmentPolicy(BasePolicy):
 
     def compute_state(self, download, upload):
         for state_id, state in self.investment_states.items():
-            if download < state.bandwidth_limit:
-                return state.state_id + 1 if upload > state.bandwidth_limit * state.promotion_ratio else state.state_id
+            if (state.upload_mode and upload < state.bandwidth_limit * state.promotion_ratio) \
+                    or (not state.upload_mode and download < state.bandwidth_limit):
+                return state.state_id
         return 0
 
     def sort(self, torrents):
@@ -205,9 +208,9 @@ class InvestmentPolicy(BasePolicy):
         next_state = self.investment_states[current_state_id + 1]
         torrent.mining_state['state_id'] = current_state_id + 1
         if next_state.upload_mode:
-            torrent.download.set_upload_mode(True)
+            torrent.download.restart(upload_mode=True)
         else:
-            torrent.download.set_upload_mode(False)
+            torrent.download.restart(upload_mode=False)
 
     def run(self):
         """
@@ -227,6 +230,11 @@ class InvestmentPolicy(BasePolicy):
                 continue
 
             torrent_state = torrent.download.get_state()
+            eta = torrent_state.get_eta()
+            if eta == 0:
+                torrent.download.restart(upload_mode=True)
+                num_uploading += 1
+
             upload = torrent_state.get_total_transferred(UPLOAD)
             download = torrent_state.get_total_transferred(DOWNLOAD)
 
@@ -241,14 +249,12 @@ class InvestmentPolicy(BasePolicy):
                 if investment_state.is_promotion_ready(download, upload):
                     self.promote_torrent(torrent)
                 else:
-                    status = torrent.download.get_state().get_status()
+                    status = torrent_state.get_status()
                     if investment_state.upload_mode and status is not DLSTATUS_SEEDING:
-                        torrent.download.restart()
-                        torrent.download.set_upload_mode(True)
+                        torrent.download.restart(upload_mode=True)
                         num_uploading += 1
                     elif not investment_state.upload_mode and status is not DLSTATUS_DOWNLOADING:
-                        torrent.download.restart()
-                        torrent.download.set_upload_mode(False)
+                        torrent.download.restart(upload_mode=False)
                         num_downloading += 1
                 started += 1
                 torrent.to_start = False

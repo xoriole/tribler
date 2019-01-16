@@ -279,7 +279,7 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
         do_check()
         return can_create_deferred
 
-    def network_create_engine_wrapper(self, pstate, checkpoint_disabled=False, share_mode=False):
+    def network_create_engine_wrapper(self, pstate, checkpoint_disabled=False, share_mode=False, upload_mode=False):
         with self.dllock:
             self._logger.debug("LibtorrentDownloadImpl: network_create_engine_wrapper()")
 
@@ -293,6 +293,8 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
 
             if share_mode:
                 atp["flags"] = lt.add_torrent_params_flags_t.flag_share_mode
+            if upload_mode:
+                atp["flags"] = lt.add_torrent_params_flags_t.flag_upload_mode
 
             self.set_checkpoint_disabled(checkpoint_disabled)
 
@@ -1022,7 +1024,7 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
         metainfo = self.tdef.get_metainfo()
         self.filepieceranges = maketorrent.get_length_filepieceranges_from_metainfo(metainfo, [])[1]
 
-    def restart(self):
+    def restart(self, upload_mode=False):
         """ Restart the Download """
         self.set_user_stopped(False)
         self._logger.debug("LibtorrentDownloadImpl: restart: %s", self.tdef.get_name())
@@ -1035,12 +1037,13 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
                 def schedule_create_engine(_):
                     self.cew_scheduled = True
                     create_engine_wrapper_deferred = self.network_create_engine_wrapper(
-                        self.pstate_for_restart, share_mode=self.get_share_mode())
+                        self.pstate_for_restart, share_mode=self.get_share_mode(), upload_mode=upload_mode)
                     create_engine_wrapper_deferred.addCallback(self.session.lm.on_download_handle_created)
 
                 can_create_engine_deferred = self.can_create_engine_wrapper()
                 can_create_engine_deferred.addCallback(schedule_create_engine)
             else:
+                self.handle.set_upload_mode(upload_mode)
                 self.handle.resume()
                 self.set_vod_mode(self.get_mode() == DLMODE_VOD)
 
