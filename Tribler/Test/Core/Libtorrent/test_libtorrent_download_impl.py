@@ -105,6 +105,7 @@ class TestLibtorrentDownloadImpl(TestAsServer):
         impl.handle = MockObject()
         impl.handle.set_priority = lambda _: None
         impl.handle.set_sequential_download = lambda _: None
+        impl.handle.set_upload_mode = lambda _: None
         impl.handle.resume = lambda: None
         impl.handle.status = lambda: fake_status
         fake_status = MockObject()
@@ -113,6 +114,30 @@ class TestLibtorrentDownloadImpl(TestAsServer):
         impl.dlconfig = DownloadStartupConfig().dlconfig.copy()
         impl.session.lm.on_download_wrapper_created = lambda _: True
         impl.restart()
+
+    @trial_timeout(20)
+    def test_restart_in_upload_mode(self):
+        tdef = self.create_tdef()
+
+        def mock_set_upload_mode(handle, mode):
+            handle.upload_mode = mode
+
+        impl = LibtorrentDownloadImpl(self.session, tdef)
+        impl.handle = MockObject()
+        impl.handle.upload_mode = False
+        impl.handle.set_priority = lambda _: None
+        impl.handle.set_sequential_download = lambda _: None
+        impl.handle.set_upload_mode = lambda mode: mock_set_upload_mode(impl.handle, mode)
+        impl.handle.resume = lambda: None
+        impl.handle.status = lambda: fake_status
+        fake_status = MockObject()
+        fake_status.share_mode = False
+        # Create a dummy download config
+        impl.dlconfig = DownloadStartupConfig().dlconfig.copy()
+        impl.session.lm.on_download_wrapper_created = lambda _: True
+        impl.restart(upload_mode=True)
+
+        self.assertTrue(impl.handle.upload_mode)
 
     @trial_timeout(20)
     def test_restart_no_handle(self):
