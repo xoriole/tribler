@@ -174,6 +174,7 @@ class TriblerWindow(QMainWindow):
         self.discovering_page.initialize_discovering_page()
         self.discovered_page.initialize_discovered_page()
         self.trust_page.initialize_trust_page()
+        self.token_mining_page.initialize_token_mining_page()
 
         self.stackedWidget.setCurrentIndex(PAGE_LOADING)
 
