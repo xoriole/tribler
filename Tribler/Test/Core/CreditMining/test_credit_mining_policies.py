@@ -1,9 +1,9 @@
+from __future__ import absolute_import
 """
 Module of Credit mining function testing.
 
 Author(s): Mihai Capota, Ardhi Putra
 """
-from __future__ import absolute_import
 from six.moves import xrange
 from twisted.internet.defer import inlineCallbacks
 

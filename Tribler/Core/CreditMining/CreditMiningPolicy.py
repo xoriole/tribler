@@ -4,7 +4,6 @@ Author(s): Egbert Bouman, Mihai Capota, Elric Milon, Ardhi Putra
 """
 from __future__ import absolute_import
 import logging
-import math
 import random
 import time
 
@@ -45,7 +44,7 @@ class BasePolicy(object):
 
     def run(self):
         started = stopped = 0
-        for infohash, torrent in self.torrents.items():
+        for torrent in self.torrents.values():
             if not torrent.download:
                 continue
 
@@ -70,8 +69,6 @@ class RandomPolicy(BasePolicy):
     """
     A credit mining policy that chooses a swarm randomly
     """
-    def __init__(self):
-        super(RandomPolicy, self).__init__()
 
     def sort(self, torrents):
         result = torrents[:]
@@ -83,8 +80,6 @@ class SeederRatioPolicy(BasePolicy):
     """
     Find the most underseeded swarm to boost.
     """
-    def __init__(self):
-        super(SeederRatioPolicy, self).__init__()
 
     def sort(self, torrents):
         def sort_key(torrent):
@@ -99,9 +94,6 @@ class UploadPolicy(BasePolicy):
     """
     Choose swarm such that we maximize the total upload.
     """
-
-    def __init__(self):
-        super(UploadPolicy, self).__init__()
 
     def sort(self, torrents):
         def sort_key(torrent):
@@ -186,7 +178,7 @@ class InvestmentPolicy(BasePolicy):
         self.torrents[torrent.infohash] = torrent
 
     def compute_state(self, download, upload):
-        for state_id, state in self.investment_states.items():
+        for state in self.investment_states.values():
             if (state.upload_mode and upload < state.bandwidth_limit * state.promotion_ratio) \
                     or (not state.upload_mode and download < state.bandwidth_limit):
                 return state.state_id
@@ -225,7 +217,7 @@ class InvestmentPolicy(BasePolicy):
         """
         started = stopped = 0
         num_uploading = num_downloading = 0
-        for infohash, torrent in self.torrents.items():
+        for torrent in self.torrents.values():
             if not torrent.download:
                 continue
 

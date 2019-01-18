@@ -13,7 +13,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.defer import Deferred, DeferredList, succeed
 
 from Tribler.Core.CreditMining.CreditMiningSource import ChannelSource
-from Tribler.Core.CreditMining.CreditMiningPolicy import InvestmentPolicy, MB
+from Tribler.Core.CreditMining.CreditMiningPolicy import InvestmentPolicy, MB, RandomPolicy
 from Tribler.Core.DownloadConfig import DownloadStartupConfig
 from Tribler.Core.simpledefs import DLSTATUS_DOWNLOADING, DLSTATUS_STOPPED, DLSTATUS_SEEDING, \
     DLSTATUS_STOPPED_ON_ERROR, UPLOAD, NTFY_CREDIT_MINING, NTFY_ERROR, DOWNLOAD
@@ -75,7 +75,7 @@ class CreditMiningManager(TaskManager):
         self.upload_mode = False
 
         # Our default policy: torrents are selected based on investment policy
-        self.policies = policies or [InvestmentPolicy()]
+        self.policies = policies or [RandomPolicy(), InvestmentPolicy()]
 
         if not os.path.exists(self.settings.save_path):
             os.makedirs(self.settings.save_path)
@@ -255,7 +255,7 @@ class CreditMiningManager(TaskManager):
         bytes_left = self.get_reserved_space_left()
 
         # Determine which torrent to start and which to stop.
-        loaded_torrents = [torrent for torrent in self.torrents.itervalues() if torrent.download]
+        loaded_torrents = [torrent for torrent in self.torrents.values() if torrent.download]
         policy_results = [iter(policy.sort(loaded_torrents)) for policy in self.policies]
 
         to_start = []

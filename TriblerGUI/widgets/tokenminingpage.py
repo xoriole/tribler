@@ -1,19 +1,20 @@
+from __future__ import absolute_import
+from __future__ import division
 import time
 
+import datetime
 import matplotlib
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QIcon
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.dates import DateFormatter
 from matplotlib.figure import Figure
 
-from TriblerGUI.utilities import format_size, get_image_path
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QSizePolicy
 
 matplotlib.use('Qt5Agg')
 
-import datetime
-from PyQt5.QtWidgets import QWidget, QSizePolicy
-
+from TriblerGUI.utilities import format_size, get_image_path
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 
 
@@ -157,7 +158,8 @@ class TokenMiningPage(QWidget):
 
         self.window().token_mining_upload_amount_label.setText(format_size(total_up))
         self.window().token_mining_download_amount_label.setText(format_size(total_down))
-        self.window().token_mining_disk_usage_label.setText("%s / %s" % (format_size(float(bytes_used)), format_size(float(bytes_max))))
+        self.window().token_mining_disk_usage_label.setText("%s / %s" % (format_size(float(bytes_used)),
+                                                                         format_size(float(bytes_max))))
 
         self.push_data_to_plot(total_up, total_down)
         self.trust_plot.plot_data = self.plot_data
