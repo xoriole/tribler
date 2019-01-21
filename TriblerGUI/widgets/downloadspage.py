@@ -242,7 +242,6 @@ class DownloadsPage(QWidget):
         self.window().diskspace_usage.setText("Disk usage: %s / %s \tUpload: %.3f MB \tDownload: %.3f MB" %
                                               (format_size(float(bytes_used)), format_size(float(bytes_max)),
                                                total_up/1048576.0, total_down/1028576.0))
-        self.window().credit_mining_stats.emit({'total_download':100, 'total_upload': 50})
 
     @staticmethod
     def start_download_enabled(download_widgets):

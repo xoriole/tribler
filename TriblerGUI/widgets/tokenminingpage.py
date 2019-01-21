@@ -12,10 +12,10 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QSizePolicy
 
-matplotlib.use('Qt5Agg')
-
-from TriblerGUI.utilities import format_size, get_image_path
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
+from TriblerGUI.utilities import format_size, get_image_path
+
+matplotlib.use('Qt5Agg')
 
 
 class TokenMiningPlotMplCanvas(FigureCanvas):
