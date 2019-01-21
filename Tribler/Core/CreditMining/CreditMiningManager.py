@@ -38,6 +38,12 @@ class CreditMiningTorrent(object):
         self.start_time = time.time()
         self.mining_state = {}
 
+    def get_storage(self):
+        """ Returns the total and used storage of the torrent."""
+        full_size = self.download.get_def().get_length()
+        progress = self.download.get_state().get_progress()
+        return full_size, progress * full_size
+
 
 class CreditMiningSettings(object):
     """

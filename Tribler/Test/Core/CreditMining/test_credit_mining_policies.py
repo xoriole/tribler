@@ -161,6 +161,25 @@ class TestInvestmentPolicy(TriblerCoreTest):
             computed_state = self.policy.compute_state(downloads[i] * MB, uploads[i] * MB)
             self.assertEqual(expected_states[i], computed_state)
 
+    def test_get_reserved_bytes(self):
+        policy = InvestmentPolicy()
+        self.torrents[0].get_storage = lambda: (10 * MB, 4 * MB)
+
+        # For state 0 with 5MB bandwidth limit
+        self.torrents[0].mining_state['state_id'] = 0
+        self.assertTrue(policy.investment_states[0].bandwidth_limit, 5 * MB)
+        self.assertEqual(policy.get_reserved_bytes(self.torrents[0]), 1 * MB)
+
+        # For state 1 with 5MB bandwidth limit
+        self.torrents[0].mining_state['state_id'] = 1
+        self.assertTrue(policy.investment_states[0].bandwidth_limit, 5 * MB)
+        self.assertEqual(policy.get_reserved_bytes(self.torrents[0]), 1 * MB)
+
+        # For state 2 with 7MB bandwidth limit
+        self.torrents[0].mining_state['state_id'] = 2
+        self.assertTrue(policy.investment_states[1].bandwidth_limit, 7 * MB)
+        self.assertEqual(policy.get_reserved_bytes(self.torrents[0]), 3 * MB)
+
     def test_schedule_start(self):
         policy = InvestmentPolicy()
 
@@ -181,3 +200,25 @@ class TestInvestmentPolicy(TriblerCoreTest):
         self.assertTrue(self.torrents[0].to_start)
         self.assertEqual(start_time, self.torrents[0].mining_state['start_time'])
 
+    def test_promote_torrent(self):
+
+        def mock_restart_download(upload_mode, torrent):
+            torrent.upload_mode = upload_mode
+
+        policy = InvestmentPolicy()
+
+        torrent = self.torrents[0]
+        # Promote from state 0
+        torrent.upload_mode = False
+        torrent.mining_state['state_id'] = 0
+        torrent.download = MockObject()
+        torrent.download.restart = lambda upload_mode, _torrent=torrent: mock_restart_download(upload_mode, _torrent)
+
+        print "upload mode:", torrent.upload_mode
+
+
+        policy.promote_torrent(torrent)
+        print torrent.mining_state
+
+        self.assertEqual(torrent.mining_state['state_id'], 1)
+        self.assertTrue(torrent.upload_mode)

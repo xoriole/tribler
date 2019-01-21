@@ -10,7 +10,7 @@ import sys
 from twisted.internet.defer import inlineCallbacks, succeed
 
 from Tribler.Core.CreditMining.CreditMiningManager import CreditMiningTorrent
-from Tribler.Core.CreditMining.CreditMiningPolicy import BasePolicy
+from Tribler.Core.CreditMining.CreditMiningPolicy import BasePolicy, MB
 from Tribler.Core.simpledefs import DLSTATUS_STOPPED
 from Tribler.Core.simpledefs import DLSTATUS_STOPPED, NTFY_CREDIT_MINING, NTFY_ERROR
 from Tribler.Test.Core.base_test import MockObject
@@ -44,6 +44,7 @@ class FakeTorrent(object):
 
         self.handle = MockObject()
         self.handle.set_upload_mode = lambda enable: setattr(self.download, 'upload_mode', enable)
+        self.get_storage = lambda length=self.tdef.get_length(): (length, 0)
 
 
 class FakePolicy(BasePolicy):

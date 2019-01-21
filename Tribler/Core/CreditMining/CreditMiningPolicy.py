@@ -53,9 +53,8 @@ class BasePolicy(object):
         return started, stopped
 
     def get_reserved_bytes(self, torrent):
-        length = torrent.download.get_def().get_length()
-        progress = torrent.download.get_state().get_progress()
-        return length * (1.0 - progress)
+        total_bytes, downloaded_bytes = torrent.get_storage()
+        return total_bytes - downloaded_bytes
 
 
 class RandomPolicy(BasePolicy):
@@ -242,6 +241,7 @@ class InvestmentPolicy(BasePolicy):
         self._logger.info('Torrents in upload mode: %d, download mode: %d', num_uploading, num_downloading)
 
     def get_reserved_bytes(self, torrent):
-        length = torrent.download.get_def().get_length()
-        progress = torrent.download.get_state().get_progress()
-        return length * (1.0 - progress)
+        investment_state = self.investment_states[torrent.mining_state.get('state_id', 0)]
+        _, downloaed_bytes = torrent.get_storage()
+        diff = investment_state.bandwidth_limit - downloaed_bytes
+        return diff if diff > 0 else 0
