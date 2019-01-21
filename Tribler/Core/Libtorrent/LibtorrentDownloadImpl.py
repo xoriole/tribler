@@ -1094,12 +1094,6 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
 
         return self.save_resume_data()
 
-    def set_credit_mining_state(self, state):
-        self.credit_mining_state = state
-
-    def get_credit_mining_state(self):
-        return self.credit_mining_state
-
     def get_persistent_download_config(self):
         pstate = self.dlconfig.copy()
 
@@ -1126,10 +1120,6 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
                            dlstatus_strings[ds.get_status()], ds.get_progress())
 
         pstate.set('state', 'engineresumedata', None)
-
-        # Add credit mining state if any
-        if self.credit_mining_state:
-            pstate.set('state', 'credit_mining', self.credit_mining_state)
 
         return pstate
 
