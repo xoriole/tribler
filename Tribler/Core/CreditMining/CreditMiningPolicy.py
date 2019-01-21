@@ -27,14 +27,6 @@ class BasePolicy(object):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.torrents = {}
 
-    def get_default_state(self):
-        return {
-            'policy': self.__class__.__name__,
-            'status': -1,
-            'start_time': 0,
-            'stop_time': 0
-        }
-
     def sort(self, torrents):
         raise NotImplementedError()
 
@@ -58,6 +50,7 @@ class BasePolicy(object):
             torrent.to_start = False
 
             self._logger.info('Started %d torrent(s), stopped %d torrent(s)', started, stopped)
+        return started, stopped
 
     def get_reserved_bytes(self, torrent):
         length = torrent.download.get_def().get_length()
@@ -118,17 +111,8 @@ class InvestmentState(object):
 
     def is_promotion_ready(self, download, upload):
         if self.upload_mode:
-            return upload > self.bandwidth_limit * self.promotion_ratio
-        return download > self.bandwidth_limit
-
-    def __str__(self):
-        return 'InvestmentState {'\
-               + '\n\tid:' + str(self.state_id)\
-               + '\n\tbandwidth_limit:' + str(self.bandwidth_limit)\
-               + '\n\tupload_mode:' + str(self.upload_mode)\
-               + '\n\tpromotion_ratio:' + str(self.promotion_ratio)\
-               + '\n\tpromotion_interval:' + str(self.promotion_interval)\
-               + '\n}'
+            return upload >= self.bandwidth_limit * self.promotion_ratio
+        return download >= self.bandwidth_limit
 
 
 class InvestmentPolicy(BasePolicy):

@@ -4,11 +4,15 @@ Module of Credit mining function testing.
 Author(s): Mihai Capota, Ardhi Putra
 """
 from __future__ import absolute_import
+
+import time
+
 from six.moves import xrange
 from twisted.internet.defer import inlineCallbacks
 from Tribler.Core.CreditMining.CreditMiningPolicy import RandomPolicy, SeederRatioPolicy, UploadPolicy, \
-    InvestmentPolicy, MB
+    InvestmentPolicy, MB, InvestmentState
 from Tribler.Core.CreditMining.CreditMiningManager import CreditMiningTorrent
+from Tribler.Core.simpledefs import DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING
 from Tribler.Test.Core.base_test import TriblerCoreTest, MockObject
 
 
@@ -62,6 +66,54 @@ class TestCreditMiningPolicies(TriblerCoreTest):
         self.assertItemsEqual(sorted_torrents, expected_torrents, 'Arrays contains different torrents')
         self.assertListEqual(sorted_torrents, expected_torrents, 'Array is not sorted properly')
 
+    def test_schedule_start(self):
+        policy = UploadPolicy()
+        policy.schedule_start(self.torrents[0])
+        self.assertTrue(self.torrents[0].to_start)
+
+    def test_basic_policy_run(self):
+        """
+        Test running an iteration of basic policy.
+
+        Scenario: 10 torrents; half of them are in running state and rest in stopped state;
+        All torrent are scheduled to run in next iteration.
+        We expect that 5 torrents should start and none should stop.
+        """
+
+        # Any BasicPolicy implementation is fine.
+        policy = UploadPolicy()
+
+        def get_status(torrent):
+            return DLSTATUS_STOPPED if torrent.infohash % 2 == 0 else DLSTATUS_DOWNLOADING
+
+        for torrent in self.torrents:
+            torrent.download = MockObject()
+            torrent.download.state = MockObject()
+            torrent.download.state.get_status = lambda _torrent=torrent: get_status(_torrent)
+            torrent.download.get_state = lambda _state=torrent.download.state: _state
+            torrent.download.restart = lambda: None
+            torrent.download.stop = lambda: None
+
+            # Schedule torrent to start
+            policy.schedule_start(torrent)
+
+        (started, stopped) = policy.run()
+        self.assertEqual(started, 5)
+        self.assertEqual(stopped, 0)
+
+    def test_basic_policy_run_with_no_downloads(self):
+        """
+        Test running an iteration of basic policy without any downloads.
+        Policy should just skip those torrents.
+        """
+        policy = UploadPolicy()
+        for torrent in self.torrents:
+            policy.schedule_start(torrent)
+
+        (started, stopped) = policy.run()
+        self.assertEqual(started, 0)
+        self.assertEqual(stopped, 0)
+
 
 class TestInvestmentPolicy(TriblerCoreTest):
     """
@@ -86,6 +138,20 @@ class TestInvestmentPolicy(TriblerCoreTest):
         self.assertEqual(default_states[19].upload_mode, True)
         self.assertEqual(default_states[19].bandwidth_limit, 163 * MB)
 
+    def test_state_is_promotion_ready(self):
+        download_state1 = InvestmentState(1, False, 5*MB, promotion_ratio=1)
+        self.assertFalse(download_state1.is_promotion_ready(4 * MB, 3 * MB))
+        self.assertTrue(download_state1.is_promotion_ready(5.1 * MB, 3 * MB))
+        self.assertFalse(download_state1.is_promotion_ready(3 * MB, 6 * MB))
+
+        upload_state1 = InvestmentState(1, True, 5 * MB, promotion_ratio=1)
+        self.assertFalse(upload_state1.is_promotion_ready(5 * MB, 3 * MB))
+        self.assertTrue(upload_state1.is_promotion_ready(5 * MB, 6 * MB))
+
+        upload_state2 = InvestmentState(1, True, 5 * MB, promotion_ratio=2)
+        self.assertFalse(upload_state2.is_promotion_ready(5 * MB, 6 * MB))
+        self.assertTrue(upload_state2.is_promotion_ready(5 * MB, 10 * MB))
+
     def test_compute_investment_state(self):
         downloads = [1, 4, 5, 8, 10, 110, 150]
         uploads = [0, 2, 3, 7, 15, 90, 180]
@@ -94,3 +160,24 @@ class TestInvestmentPolicy(TriblerCoreTest):
         for i in xrange(len(downloads)):
             computed_state = self.policy.compute_state(downloads[i] * MB, uploads[i] * MB)
             self.assertEqual(expected_states[i], computed_state)
+
+    def test_schedule_start(self):
+        policy = InvestmentPolicy()
+
+        self.torrents[0].download = MockObject()
+        self.torrents[0].state = MockObject()
+        self.torrents[0].state.get_total_transferred = lambda _: 0
+
+        time_before = time.time()
+        policy.schedule_start(self.torrents[0])
+        self.assertTrue(self.torrents[0].to_start)
+        added_time = self.torrents[0].mining_state['start_time']
+        self.assertTrue(added_time >= time_before)
+
+        # Check adding torrent is done only once on subsequent start
+        start_time = self.torrents[0].mining_state['start_time']
+        self.torrents[0].to_start = False
+        policy.schedule_start(self.torrents[0])
+        self.assertTrue(self.torrents[0].to_start)
+        self.assertEqual(start_time, self.torrents[0].mining_state['start_time'])
+
