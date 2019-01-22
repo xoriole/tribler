@@ -14,7 +14,7 @@ from Tribler.Core.CreditMining.CreditMiningPolicy import BasePolicy, MB
 from Tribler.Core.simpledefs import DLSTATUS_STOPPED
 from Tribler.Core.simpledefs import DLSTATUS_STOPPED, NTFY_CREDIT_MINING, NTFY_ERROR
 from Tribler.Test.Core.base_test import MockObject
-from Tribler.Test.test_as_server import TestAsServer
+from Tribler.Test.test_as_server import TestAsServer, BaseTestCase
 
 
 class FakeTorrent(object):
@@ -56,6 +56,30 @@ class FakePolicy(BasePolicy):
 
     def sort(self, torrents):
         return sorted(torrents, key=lambda t: t.infohash, reverse=self.reverse)
+
+
+class TestCreditMiningTorrent(BaseTestCase):
+
+    def test_credit_mining_get_storage(self):
+        infohash_bin = '0' * 40
+        name = u'torrent'
+
+        tdef = MockObject()
+        tdef.get_infohash = lambda: infohash_bin
+        tdef.get_name = lambda: name
+        tdef.get_length = lambda: 1000
+
+        state = MockObject()
+        state.get_progress = lambda: 0.5
+
+        download = MockObject()
+        download.get_def = lambda: tdef
+        download.get_state = lambda: state
+
+        torrent = CreditMiningTorrent(infohash_bin, name, download=download)
+        total, downloaded = torrent.get_storage()
+        self.assertEqual(total, 1000)
+        self.assertEqual(downloaded, 500)
 
 
 class TestCreditMiningManager(TestAsServer):

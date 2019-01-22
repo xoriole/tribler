@@ -30,8 +30,8 @@ class BasePolicy(object):
     def sort(self, torrents):
         raise NotImplementedError()
 
-    def schedule_start(self, torrent):
-        torrent.to_start = True
+    def schedule(self, torrent, to_start=True):
+        torrent.to_start = to_start
         self.torrents[torrent.infohash] = torrent
 
     def run(self):
@@ -161,11 +161,13 @@ class InvestmentPolicy(BasePolicy):
         self.torrents[torrent.infohash] = torrent
 
     def compute_state(self, download, upload):
+        state_id = 0
         for state in self.investment_states.values():
+            state_id = state.state_id
             if (state.upload_mode and upload < state.bandwidth_limit * state.promotion_ratio) \
                     or (not state.upload_mode and download < state.bandwidth_limit):
-                return state.state_id
-        return 0
+                break
+        return state_id
 
     def sort(self, torrents):
         def sort_key(torrent):

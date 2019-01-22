@@ -68,16 +68,35 @@ class TestCreditMiningPolicies(TriblerCoreTest):
 
     def test_schedule_start(self):
         policy = UploadPolicy()
-        policy.schedule_start(self.torrents[0])
+        policy.schedule(self.torrents[0])
         self.assertTrue(self.torrents[0].to_start)
+        policy.schedule(self.torrents[1], to_start=False)
+        self.assertFalse(self.torrents[1].to_start)
 
     def test_basic_policy_run(self):
         """
         Test running an iteration of basic policy.
 
-        Scenario: 10 torrents; half of them are in running state and rest in stopped state;
-        All torrent are scheduled to run in next iteration.
-        We expect that 5 torrents should start and none should stop.
+        Scenario: There are 10 torrents with infohashes ordered as 0-9 and the torrents with odd infohashes
+        are downloading while the rest are stopped. In the next iteration, we assume that all the
+        torrents with infohashes as multiple of 3 are scheduled to start and the rest to be stopped.
+
+        The scenario is represented in the table below:
+        Infohash    Status         To Start     ->  Result
+            0       STOPPED         True            Started
+            1       DOWNLOADING     False           Stopped
+            2       STOPPED         False           Do Nothing
+            3       DOWNLOADING     True            Do Nothing
+            4       STOPPED         False           Do Nothing
+            5       DOWNLOADING     False           Stopped
+            6       STOPPED         True            Started
+            7       DOWNLOADING     False           Stopped
+            8       STOPPED         False           Do Nothing
+            9       DOWNLOADING     True            Do Nothing
+
+        At the end of the iteration, the following result is expected:
+        Started = 2
+        Stopped = 3
         """
 
         # Any BasicPolicy implementation is fine.
@@ -94,12 +113,15 @@ class TestCreditMiningPolicies(TriblerCoreTest):
             torrent.download.restart = lambda: None
             torrent.download.stop = lambda: None
 
-            # Schedule torrent to start
-            policy.schedule_start(torrent)
+            # Schedule torrent to start or stop
+            if torrent.infohash % 3 == 0:
+                policy.schedule(torrent)
+            else:
+                policy.schedule(torrent, to_start=False)
 
         (started, stopped) = policy.run()
-        self.assertEqual(started, 5)
-        self.assertEqual(stopped, 0)
+        self.assertEqual(started, 2)
+        self.assertEqual(stopped, 3)
 
     def test_basic_policy_run_with_no_downloads(self):
         """
@@ -108,7 +130,7 @@ class TestCreditMiningPolicies(TriblerCoreTest):
         """
         policy = UploadPolicy()
         for torrent in self.torrents:
-            policy.schedule_start(torrent)
+            policy.schedule(torrent)
 
         (started, stopped) = policy.run()
         self.assertEqual(started, 0)
@@ -153,9 +175,9 @@ class TestInvestmentPolicy(TriblerCoreTest):
         self.assertTrue(upload_state2.is_promotion_ready(5 * MB, 10 * MB))
 
     def test_compute_investment_state(self):
-        downloads = [1, 4, 5, 8, 10, 110, 150]
-        uploads = [0, 2, 3, 7, 15, 90, 180]
-        expected_states = [0, 0, 1, 4, 6, 17, 18]
+        downloads = [1, 4, 5, 8, 10, 110, 150, 1000]
+        uploads = [0, 2, 3, 7, 15, 90, 180, 1000]
+        expected_states = [0, 0, 1, 4, 6, 17, 18, 19]
 
         for i in xrange(len(downloads)):
             computed_state = self.policy.compute_state(downloads[i] * MB, uploads[i] * MB)
@@ -208,17 +230,27 @@ class TestInvestmentPolicy(TriblerCoreTest):
         policy = InvestmentPolicy()
 
         torrent = self.torrents[0]
-        # Promote from state 0
-        torrent.upload_mode = False
-        torrent.mining_state['state_id'] = 0
         torrent.download = MockObject()
         torrent.download.restart = lambda upload_mode, _torrent=torrent: mock_restart_download(upload_mode, _torrent)
 
-        print "upload mode:", torrent.upload_mode
-
-
+        # Promote from state 0
+        torrent.upload_mode = False
+        torrent.mining_state['state_id'] = 0
         policy.promote_torrent(torrent)
-        print torrent.mining_state
-
         self.assertEqual(torrent.mining_state['state_id'], 1)
+        self.assertTrue(torrent.upload_mode)
+
+        # Promote from state 1
+        torrent.upload_mode = True
+        torrent.mining_state['state_id'] = 1
+        policy.promote_torrent(torrent)
+        self.assertEqual(torrent.mining_state['state_id'], 2)
+        self.assertFalse(torrent.upload_mode)
+
+        # Promote from last state
+        last_state = len(policy.investment_states) - 1
+        torrent.upload_mode = True  # Last state is always in upload mode
+        torrent.mining_state['state_id'] = last_state
+        policy.promote_torrent(torrent)
+        self.assertEqual(torrent.mining_state['state_id'], last_state)
         self.assertTrue(torrent.upload_mode)

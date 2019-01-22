@@ -280,7 +280,7 @@ class CreditMiningManager(TaskManager):
                     bytes_todo = self.policies[policy_index].get_reserved_bytes(torrent)
                     if bytes_left >= bytes_scheduled + bytes_todo:
                         to_start.append(torrent)
-                        self.policies[policy_index].schedule_start(torrent)
+                        self.policies[policy_index].schedule(torrent, to_start=True)
                         bytes_scheduled += bytes_todo
                         break
             iterations += 1
