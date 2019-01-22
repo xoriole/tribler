@@ -26,6 +26,8 @@ class BasePolicy(object):
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.torrents = {}
+        self.started_in_iteration = 0
+        self.stopped_in_iteration = 0
 
     def sort(self, torrents):
         raise NotImplementedError()
@@ -35,7 +37,7 @@ class BasePolicy(object):
         self.torrents[torrent.infohash] = torrent
 
     def run(self):
-        started = stopped = 0
+        self.started_in_iteration = self.stopped_in_iteration = 0
         for torrent in self.torrents.values():
             if not torrent.download:
                 continue
@@ -43,14 +45,14 @@ class BasePolicy(object):
             status = torrent.download.get_state().get_status()
             if torrent.to_start and status == DLSTATUS_STOPPED:
                 torrent.download.restart()
-                started += 1
+                self.started_in_iteration += 1
             elif not torrent.to_start and status not in [DLSTATUS_STOPPED, DLSTATUS_STOPPED_ON_ERROR]:
                 torrent.download.stop()
-                stopped += 1
+                self.stopped_in_iteration += 1
             torrent.to_start = False
 
-            self._logger.info('Started %d torrent(s), stopped %d torrent(s)', started, stopped)
-        return started, stopped
+            self._logger.info('Started %d torrent(s), stopped %d torrent(s)',
+                              self.started_in_iteration, self.stopped_in_iteration)
 
     def get_reserved_bytes(self, torrent):
         total_bytes, downloaded_bytes = torrent.get_storage()
@@ -124,6 +126,8 @@ class InvestmentPolicy(BasePolicy):
         super(InvestmentPolicy, self).__init__()
         self.investment_states = states if states else self.get_default_investment_states()
         self.mining_level = {}
+        self.num_uploading_in_iteration = 0
+        self.num_downloading_in_iteration = 0
 
     @staticmethod
     def get_default_investment_states():
@@ -200,8 +204,8 @@ class InvestmentPolicy(BasePolicy):
         Else
             - stop the torrent
         """
-        started = stopped = 0
-        num_uploading = num_downloading = 0
+        self.started_in_iteration = self.stopped_in_iteration = 0
+        self.num_uploading_in_iteration = self.num_downloading_in_iteration = 0
         for torrent in self.torrents.values():
             if not torrent.download:
                 continue
@@ -210,7 +214,8 @@ class InvestmentPolicy(BasePolicy):
             eta = torrent_state.get_eta()
             if eta == 0:
                 torrent.download.restart(upload_mode=True)
-                num_uploading += 1
+                self.num_uploading_in_iteration += 1
+                continue
 
             upload = torrent_state.get_total_transferred(UPLOAD)
             download = torrent_state.get_total_transferred(DOWNLOAD)
@@ -220,6 +225,7 @@ class InvestmentPolicy(BasePolicy):
             diff_upload = upload - torrent.mining_state.get('initial_upload', 0)
             if diff_time > WEEK and diff_upload < 5 * MB:
                 torrent.download.stop()
+                self.stopped_in_iteration += 1
 
             investment_state = self.investment_states[torrent.mining_state.get('state_id', 0)]
             if torrent.to_start:
@@ -229,18 +235,20 @@ class InvestmentPolicy(BasePolicy):
                     status = torrent_state.get_status()
                     if investment_state.upload_mode and status is not DLSTATUS_SEEDING:
                         torrent.download.restart(upload_mode=True)
-                        num_uploading += 1
+                        self.num_uploading_in_iteration += 1
                     elif not investment_state.upload_mode and status is not DLSTATUS_DOWNLOADING:
                         torrent.download.restart(upload_mode=False)
-                        num_downloading += 1
-                started += 1
+                        self.num_downloading_in_iteration += 1
+                self.started_in_iteration += 1
                 torrent.to_start = False
             else:
                 torrent.download.stop()
-                stopped += 1
+                self.stopped_in_iteration += 1
 
-        self._logger.info('Started %d torrent(s), stopped %d torrent(s)', started, stopped)
-        self._logger.info('Torrents in upload mode: %d, download mode: %d', num_uploading, num_downloading)
+        self._logger.info('Started %d torrent(s), stopped %d torrent(s)',
+                          self.started_in_iteration, self.stopped_in_iteration)
+        self._logger.info('Torrents in upload mode: %d, download mode: %d',
+                          self.num_uploading_in_iteration, self.num_downloading_in_iteration)
 
     def get_reserved_bytes(self, torrent):
         investment_state = self.investment_states[torrent.mining_state.get('state_id', 0)]

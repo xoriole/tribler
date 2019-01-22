@@ -10,9 +10,9 @@ import time
 from six.moves import xrange
 from twisted.internet.defer import inlineCallbacks
 from Tribler.Core.CreditMining.CreditMiningPolicy import RandomPolicy, SeederRatioPolicy, UploadPolicy, \
-    InvestmentPolicy, MB, InvestmentState
+    InvestmentPolicy, MB, InvestmentState, WEEK
 from Tribler.Core.CreditMining.CreditMiningManager import CreditMiningTorrent
-from Tribler.Core.simpledefs import DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING
+from Tribler.Core.simpledefs import DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING, UPLOAD, DLSTATUS_SEEDING
 from Tribler.Test.Core.base_test import TriblerCoreTest, MockObject
 
 
@@ -119,9 +119,9 @@ class TestCreditMiningPolicies(TriblerCoreTest):
             else:
                 policy.schedule(torrent, to_start=False)
 
-        (started, stopped) = policy.run()
-        self.assertEqual(started, 2)
-        self.assertEqual(stopped, 3)
+        policy.run()
+        self.assertEqual(policy.started_in_iteration, 2)
+        self.assertEqual(policy.stopped_in_iteration, 3)
 
     def test_basic_policy_run_with_no_downloads(self):
         """
@@ -132,9 +132,9 @@ class TestCreditMiningPolicies(TriblerCoreTest):
         for torrent in self.torrents:
             policy.schedule(torrent)
 
-        (started, stopped) = policy.run()
-        self.assertEqual(started, 0)
-        self.assertEqual(stopped, 0)
+        policy.run()
+        self.assertEqual(policy.started_in_iteration, 0)
+        self.assertEqual(policy.stopped_in_iteration, 0)
 
 
 class TestInvestmentPolicy(TriblerCoreTest):
@@ -254,3 +254,82 @@ class TestInvestmentPolicy(TriblerCoreTest):
         policy.promote_torrent(torrent)
         self.assertEqual(torrent.mining_state['state_id'], last_state)
         self.assertTrue(torrent.upload_mode)
+
+    def test_investment_policy_run(self):
+        """
+        Test running an iteration of investment policy.
+
+        Scenario
+        ------------------------------------------------
+        Infohash, Level, Download, Upload, To start,  ETA,  Status     -->  Expected Result
+            0       5        20      16       Yes      0    Downloading     Upload mode
+            1       0        4       2        Yes      1    Downloading     Stop
+            2       1        5       8        Yes      1    Seeding         Do nothing
+            3       8        22      23       Yes      1    Seeding         Download mode
+            4       9        30      25       No       1    Downloading     Stop
+            5       0        4       3        Yes      1    Downloading     Stop; stale
+            6       12       40      35       Yes      1    Stopped         Download mode
+            7       15       50      40       No       1    Seeding         Stop
+            8       18       160     120      Yes      1    Downloading     Do nothing
+            9       19       163     170      Yes      1    Stopped         Upload mode
+
+        At the end of the iteration, the following result is expected:
+        Started = 6         # Includes downloading and seeding torrents
+        Stopped = 4
+        Upload mode = 2     # New torrents set in upload mode
+        Download mode = 2   # New torrents set in download mode
+        """
+
+        scenario = MockObject()
+        scenario.downloads = [20, 4, 5, 22, 30, 4, 40, 50, 160, 163]
+        scenario.uploads = [16, 2, 8, 23, 25, 3, 35, 40, 120, 170]
+        scenario.levels = [5, 0, 1, 8, 9, 0, 12, 15, 18, 19]
+        scenario.to_start = [True, False, True, True, False, True, True, False, True, True]
+        scenario.torrent_status = [DLSTATUS_DOWNLOADING, DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING,
+                                   DLSTATUS_SEEDING, DLSTATUS_DOWNLOADING, DLSTATUS_DOWNLOADING,
+                                   DLSTATUS_STOPPED, DLSTATUS_SEEDING, DLSTATUS_DOWNLOADING,
+                                   DLSTATUS_STOPPED]
+
+        def get_status(scenario, torrent):
+            return scenario.torrent_status[torrent.infohash]
+
+        def get_eta(torrent):
+            return 0 if torrent.infohash == 0 else 1
+
+        def get_total_transferred(scenario, torrent, transfer_type):
+            if transfer_type == UPLOAD:
+                return scenario.downloads[torrent.infohash]
+            return scenario.uploads[torrent.infohash]
+
+        def get_mining_state(scenario, torrent):
+            mining_state = dict()
+            mining_state['initial_upload'] = 0
+            mining_state['initial_download'] = 0
+            mining_state['state_id'] = scenario.levels[torrent.infohash]
+            return mining_state
+
+        policy = InvestmentPolicy()
+        for torrent in self.torrents:
+            torrent.download = MockObject()
+            torrent.download.state = MockObject()
+            torrent.download.state.get_eta = lambda _torrent=torrent: get_eta(_torrent)
+            torrent.download.state.get_total_transferred = lambda transfer_type, _torrent=torrent, _scenario=scenario: \
+                get_total_transferred(_scenario, _torrent, transfer_type)
+            torrent.mining_state = get_mining_state(scenario, torrent)
+            torrent.download.state.get_status = lambda _scenario=scenario, _torrent=torrent: \
+                get_status(_scenario, _torrent)
+            torrent.download.get_state = lambda _state=torrent.download.state: _state
+            torrent.download.restart = lambda upload_mode: None
+            torrent.download.stop = lambda: None
+            torrent.start_time = time.time() - WEEK if torrent.infohash == 5 else time.time()
+
+            # Schedule torrent to start or stop
+            policy.schedule(torrent, to_start=scenario.to_start[torrent.infohash])
+
+        # Torrents are ready, run the policy
+        policy.run()
+
+        self.assertEqual(policy.started_in_iteration, 6)
+        self.assertEqual(policy.stopped_in_iteration, 4)
+        self.assertEqual(policy.num_downloading_in_iteration, 2)
+        self.assertEqual(policy.num_uploading_in_iteration, 2)
