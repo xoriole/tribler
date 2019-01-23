@@ -1,20 +1,21 @@
 from __future__ import absolute_import
-import gc
-import matplotlib
-
-from TriblerGUI.defs import PAGE_MARKET, GC_TIMEOUT, PAGE_TOKEN_MINING_PAGE
-from TriblerGUI.dialogs.trustexplanationdialog import TrustExplanationDialog
-
-matplotlib.use('Qt5Agg')
 
 import datetime
+import gc
+
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QWidget
+
+import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.dates import DateFormatter
 from matplotlib.figure import Figure
 
+from TriblerGUI.defs import GC_TIMEOUT, PAGE_MARKET, PAGE_TOKEN_MINING_PAGE
+from TriblerGUI.dialogs.trustexplanationdialog import TrustExplanationDialog
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
+
+matplotlib.use('Qt5Agg')
 
 
 class MplCanvas(FigureCanvas):

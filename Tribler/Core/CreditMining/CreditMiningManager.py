@@ -1,23 +1,25 @@
 from __future__ import absolute_import
+from __future__ import division
 
+import logging
 import os
 import time
+from binascii import hexlify, unhexlify
+from glob import glob
 
 import psutil
-import logging
 
-from glob import glob
-from binascii import unhexlify, hexlify
 from six import string_types
-from twisted.internet.task import LoopingCall
-from twisted.internet.defer import Deferred, DeferredList, succeed
 
-from Tribler.Core.CreditMining.CreditMiningSource import ChannelSource
+from twisted.internet.defer import Deferred, DeferredList, succeed
+from twisted.internet.task import LoopingCall
+
 from Tribler.Core.CreditMining.CreditMiningPolicy import InvestmentPolicy, MB, RandomPolicy
+from Tribler.Core.CreditMining.CreditMiningSource import ChannelSource
 from Tribler.Core.DownloadConfig import DownloadStartupConfig
-from Tribler.Core.simpledefs import DLSTATUS_DOWNLOADING, DLSTATUS_STOPPED, DLSTATUS_SEEDING, \
-    DLSTATUS_STOPPED_ON_ERROR, UPLOAD, NTFY_CREDIT_MINING, NTFY_ERROR, DOWNLOAD
 from Tribler.Core.TorrentDef import TorrentDefNoMetainfo
+from Tribler.Core.simpledefs import DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLSTATUS_STOPPED, \
+    DLSTATUS_STOPPED_ON_ERROR, DOWNLOAD, NTFY_CREDIT_MINING, NTFY_ERROR, UPLOAD
 from Tribler.pyipv8.ipv8.taskmanager import TaskManager
 
 
@@ -346,3 +348,5 @@ class CreditMiningManager(TaskManager):
         total = num_seeding + num_downloading + stopped
         if not self.select_lc.running and total >= self.settings.max_torrents_active:
             self.select_lc.start(self.settings.auto_manage_interval, now=True)
+
+        return num_downloading, num_seeding, stopped, bytes_downloaded, bytes_uploaded

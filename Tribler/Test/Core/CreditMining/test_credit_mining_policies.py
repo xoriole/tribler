@@ -8,12 +8,14 @@ from __future__ import absolute_import
 import time
 
 from six.moves import xrange
+
 from twisted.internet.defer import inlineCallbacks
-from Tribler.Core.CreditMining.CreditMiningPolicy import RandomPolicy, SeederRatioPolicy, UploadPolicy, \
-    InvestmentPolicy, MB, InvestmentState, WEEK
+
 from Tribler.Core.CreditMining.CreditMiningManager import CreditMiningTorrent
-from Tribler.Core.simpledefs import DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING, UPLOAD, DLSTATUS_SEEDING
-from Tribler.Test.Core.base_test import TriblerCoreTest, MockObject
+from Tribler.Core.CreditMining.CreditMiningPolicy import InvestmentPolicy, InvestmentState, MB, RandomPolicy, \
+    SeederRatioPolicy, UploadPolicy, WEEK
+from Tribler.Core.simpledefs import DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLSTATUS_STOPPED, UPLOAD
+from Tribler.Test.Core.base_test import MockObject, TriblerCoreTest
 
 
 class TestCreditMiningPolicies(TriblerCoreTest):
@@ -123,7 +125,7 @@ class TestCreditMiningPolicies(TriblerCoreTest):
             torrent.download = MockObject()
             torrent.download.state = MockObject()
             torrent.download.state.get_status = lambda _torrent=torrent: get_status(_torrent)
-            torrent.download.get_state = lambda _state=torrent.download.state: _state
+            torrent.download.get_state = lambda _torrent=torrent: _torrent.download.state
             torrent.download.restart = lambda: None
             torrent.download.stop = lambda: None
 
@@ -332,10 +334,10 @@ class TestInvestmentPolicy(TriblerCoreTest):
             torrent.mining_state = get_mining_state(scenario, torrent)
             torrent.download.state.get_status = lambda _scenario=scenario, _torrent=torrent: \
                 get_status(_scenario, _torrent)
-            torrent.download.get_state = lambda _state=torrent.download.state: _state
+            torrent.download.get_state = lambda _torrent=torrent: _torrent.download.state
             torrent.download.restart = lambda upload_mode: None
             torrent.download.stop = lambda: None
-            torrent.start_time = time.time() - WEEK if torrent.infohash == 5 else time.time()
+            torrent.start_time = time.time() - WEEK - 1 if torrent.infohash == 5 else time.time()
 
             # Schedule torrent to start or stop
             policy.schedule(torrent, to_start=scenario.to_start[torrent.infohash])
@@ -347,3 +349,16 @@ class TestInvestmentPolicy(TriblerCoreTest):
         self.assertEqual(policy.stopped_in_iteration, 4)
         self.assertEqual(policy.num_downloading_in_iteration, 2)
         self.assertEqual(policy.num_uploading_in_iteration, 2)
+
+    def test_investment_policy_run_with_no_downloads(self):
+        """
+        Test running an iteration of investment policy without any downloads.
+        Policy should just skip those torrents.
+        """
+        policy = InvestmentPolicy()
+        for torrent in self.torrents:
+            policy.schedule(torrent)
+
+        policy.run()
+        self.assertEqual(policy.started_in_iteration, 0)
+        self.assertEqual(policy.stopped_in_iteration, 0)

@@ -3,6 +3,7 @@ Supported credit mining policy.
 Author(s): Egbert Bouman, Mihai Capota, Elric Milon, Ardhi Putra
 """
 from __future__ import absolute_import
+from __future__ import division
 
 import logging
 import random
@@ -153,7 +154,7 @@ class InvestmentPolicy(BasePolicy):
             upload_state = download_state + 1
             states[download_state] = InvestmentState(download_state, download_state % 2, investment * MB)
             states[upload_state] = InvestmentState(upload_state, upload_state % 2, investment * MB)
-            investment = investment + investment/2
+            investment = investment + investment//2
         return states
 
     def schedule_start(self, torrent):

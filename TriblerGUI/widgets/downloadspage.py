@@ -1,20 +1,21 @@
-import logging
+from __future__ import absolute_import
+
 import os
 import time
 
 from PyQt5.QtCore import QTimer, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QWidget, QAbstractItemView, QAction, QFileDialog, QTreeWidgetItem
+from PyQt5.QtWidgets import QAbstractItemView, QAction, QFileDialog, QTreeWidgetItem, QWidget
 
-from TriblerGUI.tribler_action_menu import TriblerActionMenu
-from TriblerGUI.defs import DOWNLOADS_FILTER_ALL, DOWNLOADS_FILTER_DOWNLOADING, DOWNLOADS_FILTER_COMPLETED, \
-    DOWNLOADS_FILTER_ACTIVE, DOWNLOADS_FILTER_INACTIVE, DOWNLOADS_FILTER_CREDITMINING, DOWNLOADS_FILTER_DEFINITION, \
-    DLSTATUS_STOPPED, DLSTATUS_STOPPED_ON_ERROR, BUTTON_TYPE_NORMAL, BUTTON_TYPE_CONFIRM, DLSTATUS_METADATA, \
-    DLSTATUS_HASHCHECKING, DLSTATUS_WAITING4HASHCHECK, DLSTATUS_CIRCUITS, DOWNLOADS_FILTER_CHANNELS
+from TriblerGUI.defs import BUTTON_TYPE_CONFIRM, BUTTON_TYPE_NORMAL, DLSTATUS_CIRCUITS, DLSTATUS_HASHCHECKING, \
+    DLSTATUS_METADATA, DLSTATUS_STOPPED, DLSTATUS_STOPPED_ON_ERROR, DLSTATUS_WAITING4HASHCHECK, \
+    DOWNLOADS_FILTER_ACTIVE, DOWNLOADS_FILTER_ALL, DOWNLOADS_FILTER_CHANNELS, DOWNLOADS_FILTER_COMPLETED, \
+    DOWNLOADS_FILTER_CREDITMINING, DOWNLOADS_FILTER_DEFINITION, DOWNLOADS_FILTER_DOWNLOADING, DOWNLOADS_FILTER_INACTIVE
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
-from TriblerGUI.widgets.downloadwidgetitem import DownloadWidgetItem
+from TriblerGUI.tribler_action_menu import TriblerActionMenu
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
-from TriblerGUI.utilities import format_speed, format_size
+from TriblerGUI.utilities import format_size, format_speed
+from TriblerGUI.widgets.downloadwidgetitem import DownloadWidgetItem
 from TriblerGUI.widgets.loading_list_item import LoadingListItem
 
 

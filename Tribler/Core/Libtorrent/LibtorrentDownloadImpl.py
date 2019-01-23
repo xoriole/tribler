@@ -3,6 +3,8 @@ A wrapper around a libtorrent download.
 
 Author(s): Arno Bakker, Egbert Bouman
 """
+from __future__ import absolute_import
+
 import base64
 import logging
 import os
@@ -11,21 +13,25 @@ import time
 from binascii import hexlify
 
 import libtorrent as lt
+
+import six
+from six.moves import xrange
+
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, CancelledError, succeed
+from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from Tribler.Core import NoDispersyRLock
-from Tribler.Core.DownloadConfig import DownloadStartupConfig, DownloadConfigInterface, get_default_dest_dir
+from Tribler.Core.DownloadConfig import DownloadConfigInterface, DownloadStartupConfig, get_default_dest_dir
 from Tribler.Core.DownloadState import DownloadState
 from Tribler.Core.Libtorrent import checkHandleAndSynchronize
-from Tribler.Core.TorrentDef import TorrentDefNoMetainfo, TorrentDef
+from Tribler.Core.TorrentDef import TorrentDef, TorrentDefNoMetainfo
 from Tribler.Core.Utilities import maketorrent
 from Tribler.Core.Utilities.torrent_utils import get_info_from_handle
 from Tribler.Core.exceptions import SaveResumeDataError
 from Tribler.Core.osutils import fix_filebasename
-from Tribler.Core.simpledefs import DLSTATUS_SEEDING, DLSTATUS_STOPPED, DLMODE_VOD, DLMODE_NORMAL, \
+from Tribler.Core.simpledefs import DLMODE_NORMAL, DLMODE_VOD, DLSTATUS_SEEDING, DLSTATUS_STOPPED, \
     PERSISTENTSTATE_CURRENTVERSION, dlstatus_strings
 from Tribler.pyipv8.ipv8.taskmanager import TaskManager
 
@@ -933,7 +939,7 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
         for announce_entry in self.handle.trackers():
             if announce_entry['url'] not in self.tracker_status:
                 try:
-                    url = unicode(announce_entry['url'])
+                    url = six.text_type(announce_entry['url'])
                     self.tracker_status[url] = [0, 'Not contacted yet']
                 except UnicodeDecodeError:
                     pass
