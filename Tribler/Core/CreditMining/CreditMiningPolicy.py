@@ -3,12 +3,15 @@ Supported credit mining policy.
 Author(s): Egbert Bouman, Mihai Capota, Elric Milon, Ardhi Putra
 """
 from __future__ import absolute_import
+
 import logging
 import random
 import time
 
-from Tribler.Core.simpledefs import DLSTATUS_STOPPED, DLSTATUS_STOPPED_ON_ERROR, UPLOAD, DOWNLOAD, DLSTATUS_SEEDING, \
-    DLSTATUS_DOWNLOADING
+from six.moves import xrange
+
+from Tribler.Core.simpledefs import DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING, DLSTATUS_STOPPED, \
+    DLSTATUS_STOPPED_ON_ERROR, DOWNLOAD, UPLOAD
 
 MB = 1024 * 1024
 HOUR = 3600

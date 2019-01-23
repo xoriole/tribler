@@ -45,26 +45,40 @@ class TestCreditMiningPolicies(TriblerCoreTest):
         self.assertItemsEqual(sorted_torrents, expected_torrents, 'Arrays contains different torrents')
         self.assertListEqual(sorted_torrents, expected_torrents, 'Array is not sorted properly')
 
-    def test_upload_policy(self):
-        for i, torrent in enumerate(self.torrents):
-            mock_status = MockObject()
-            mock_status.total_upload = i * i
-            mock_status.active_time = i
+    def test_upload_based_policy(self):
 
-            mock_handle = MockObject()
-            mock_handle.status = lambda status=mock_status: status
+        def setup_torrents(torrents):
+            for i, torrent in enumerate(torrents):
+                mock_status = MockObject()
+                mock_status.total_upload = i * i
+                mock_status.active_time = i
 
-            mock_dl = MockObject()
-            mock_dl.handle = mock_handle
+                mock_handle = MockObject()
+                mock_handle.status = lambda status=mock_status: status
 
-            torrent.download = mock_dl
+                mock_dl = MockObject()
+                mock_dl.handle = mock_handle
 
-        policy = UploadPolicy()
-        sorted_torrents = policy.sort(self.torrents)
-        expected_torrents = list(reversed(self.torrents))
+                torrent.download = mock_dl
+            return torrents
 
-        self.assertItemsEqual(sorted_torrents, expected_torrents, 'Arrays contains different torrents')
-        self.assertListEqual(sorted_torrents, expected_torrents, 'Array is not sorted properly')
+        # Test Upload policy
+        upload_policy = UploadPolicy()
+        torrent_collection1 = setup_torrents(self.torrents)
+        sorted_torrents1 = upload_policy.sort(torrent_collection1)
+        expected_torrents1 = list(reversed(torrent_collection1))
+
+        self.assertItemsEqual(sorted_torrents1, expected_torrents1, 'Arrays contains different torrents')
+        self.assertListEqual(sorted_torrents1, expected_torrents1, 'Array is not sorted properly')
+
+        # Test Investment policy
+        investment_policy = InvestmentPolicy()
+        torrent_collection2 = setup_torrents(self.torrents)
+        sorted_torrents2 = investment_policy.sort(torrent_collection2)
+        expected_torrents2 = list(reversed(torrent_collection2))
+
+        self.assertItemsEqual(sorted_torrents2, expected_torrents2, 'Arrays contains different torrents')
+        self.assertListEqual(sorted_torrents2, expected_torrents2, 'Array is not sorted properly')
 
     def test_schedule_start(self):
         policy = UploadPolicy()
