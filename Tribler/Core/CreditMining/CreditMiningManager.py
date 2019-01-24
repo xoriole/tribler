@@ -14,7 +14,7 @@ from six import string_types
 from twisted.internet.defer import Deferred, DeferredList, succeed
 from twisted.internet.task import LoopingCall
 
-from Tribler.Core.CreditMining.CreditMiningPolicy import InvestmentPolicy, MB, RandomPolicy
+from Tribler.Core.CreditMining.CreditMiningPolicy import InvestmentPolicy, MB
 from Tribler.Core.CreditMining.CreditMiningSource import ChannelSource
 from Tribler.Core.DownloadConfig import DownloadStartupConfig
 from Tribler.Core.TorrentDef import TorrentDefNoMetainfo
@@ -28,14 +28,12 @@ class CreditMiningTorrent(object):
     Wrapper class for Credit Mining download
     """
     def __init__(self, infohash, name, download=None, state=None):
-        self._logger = logging.getLogger(self.__class__.__name__)
         self.infohash = infohash
         self.name = name
         self.download = download
         self.state = state
         self.sources = set()
         self.force_checked = False
-        self.policy = None
         self.to_start = False
         self.start_time = time.time()
         self.mining_state = {}
@@ -56,7 +54,7 @@ class CreditMiningSettings(object):
         self.max_torrents_listed = 100
         # Note: be sure to set this interval to something that gives torrents a fair chance of
         # discovering peers and uploading data
-        self.auto_manage_interval = 60
+        self.auto_manage_interval = 120
         self.hops = 1
         # Maximum number of bytes of disk space that credit mining is allowed to use.
         self.max_disk_space = config.get_credit_mining_disk_space() if config else 50 * 1024 ** 3
@@ -82,8 +80,8 @@ class CreditMiningManager(TaskManager):
         self.policies = []
         self.upload_mode = False
 
-        # Our default policy: torrents are selected based on investment policy
-        self.policies = policies or [RandomPolicy(), InvestmentPolicy()]
+        # Our default policy [2019-01-24]: torrents are selected based on investment policy
+        self.policies = policies or [InvestmentPolicy()]
 
         if not os.path.exists(self.settings.save_path):
             os.makedirs(self.settings.save_path)

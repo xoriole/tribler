@@ -47,7 +47,10 @@ class TestCreditMiningPolicies(TriblerCoreTest):
         self.assertItemsEqual(sorted_torrents, expected_torrents, 'Arrays contains different torrents')
         self.assertListEqual(sorted_torrents, expected_torrents, 'Array is not sorted properly')
 
-    def test_upload_based_policy(self):
+    def test_upload_based_policy_sort(self):
+        """
+        Tests both UploadPolicy and InvestmentPolicy since they both sorts torrents based on upload.
+        """
 
         def setup_torrents(torrents):
             for i, torrent in enumerate(torrents):
@@ -115,25 +118,27 @@ class TestCreditMiningPolicies(TriblerCoreTest):
         Stopped = 3
         """
 
+        scenario = MockObject()
+        scenario.to_start = [True, False, False, True, False, False, True, False, False, True]
+        scenario.torrent_status = [DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING, DLSTATUS_STOPPED,
+                                   DLSTATUS_DOWNLOADING, DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING,
+                                   DLSTATUS_STOPPED, DLSTATUS_DOWNLOADING, DLSTATUS_STOPPED,
+                                   DLSTATUS_DOWNLOADING]
+
         # Any BasicPolicy implementation is fine.
         policy = UploadPolicy()
 
-        def get_status(torrent):
-            return DLSTATUS_STOPPED if torrent.infohash % 2 == 0 else DLSTATUS_DOWNLOADING
+        def get_status(scenario, index):
+            return scenario.torrent_status[index]
 
-        for torrent in self.torrents:
+        for i, torrent in enumerate(self.torrents):
             torrent.download = MockObject()
             torrent.download.state = MockObject()
-            torrent.download.state.get_status = lambda _torrent=torrent: get_status(_torrent)
+            torrent.download.state.get_status = lambda _scenario=scenario, index=i: get_status(_scenario, index)
             torrent.download.get_state = lambda _torrent=torrent: _torrent.download.state
             torrent.download.restart = lambda: None
             torrent.download.stop = lambda: None
-
-            # Schedule torrent to start or stop
-            if torrent.infohash % 3 == 0:
-                policy.schedule(torrent)
-            else:
-                policy.schedule(torrent, to_start=False)
+            policy.schedule(torrent, to_start=scenario.to_start[i])
 
         policy.run()
         self.assertEqual(policy.started_in_iteration, 2)

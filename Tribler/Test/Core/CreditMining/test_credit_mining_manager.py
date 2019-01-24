@@ -334,8 +334,13 @@ class TestCreditMiningManager(TestAsServer):
         self.assertTrue(all([d.upload_mode for d in downloads]))
 
     def test_get_reserved_space_left(self):
-
-        # Assumption: 10 torrents, each of 100MB with 50% download progress.
+        """
+        Tests the reserved space left on disk for credit mining.
+        Scenario:
+            - 10 torrents,
+            - Individual torrent size: 100MB
+            - Individual download progress: 50%
+        """
         num_downloads = 10
         used_space = num_downloads * 100 * MB * 0.5
         max_space = self.credit_mining_manager.settings.max_disk_space

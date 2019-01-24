@@ -37,10 +37,20 @@ class BasePolicy(object):
         raise NotImplementedError()
 
     def schedule(self, torrent, to_start=True):
+        """
+        Schedules the torrent to start or stop. It also adds the torrent to the policy list.
+        """
         torrent.to_start = to_start
         self.torrents[torrent.infohash] = torrent
 
     def run(self):
+        """
+        Runs an iteration of the Basic policy.
+        For each torrent in the policy session,
+            - Start the stopped torrent if it is set to start
+            - Stop the running torrent if it is set to stop
+            - For the rest, make no changes
+        """
         self.started_in_iteration = self.stopped_in_iteration = 0
         for torrent in self.torrents.values():
             if not torrent.download:
@@ -59,6 +69,9 @@ class BasePolicy(object):
                               self.started_in_iteration, self.stopped_in_iteration)
 
     def get_reserved_bytes(self, torrent):
+        """
+        Returns the storage(bytes) required for downloading remaining content of the torrent.
+        """
         total_bytes, downloaded_bytes = torrent.get_storage()
         return total_bytes - downloaded_bytes
 
@@ -105,7 +118,7 @@ class UploadPolicy(BasePolicy):
 
 class InvestmentState(object):
     """
-    Represents the credit mining state for the torrent.
+    Represents the credit mining state for a torrent.
     """
     def __init__(self, state_id, upload_mode, bandwidth_limit, promotion_ratio=1, promotion_interval=5 * 60):
         self.state_id = state_id
@@ -115,6 +128,10 @@ class InvestmentState(object):
         self.promotion_interval = promotion_interval
 
     def is_promotion_ready(self, download, upload):
+        """
+        Check if a torrent with given download and upload value is eligible for promotion to the next
+        investment state.
+        """
         if self.upload_mode:
             return upload >= self.bandwidth_limit * self.promotion_ratio
         return download >= self.bandwidth_limit
@@ -122,7 +139,7 @@ class InvestmentState(object):
 
 class InvestmentPolicy(BasePolicy):
     """
-    Policy to select and promote torrents based on the (upload) yield on the investment download.
+    Policy to select and promote torrents based on the (upload) yield on the investment(download).
     Higher the yield, higher will be the allowance to do investment download.
     """
 
@@ -187,6 +204,10 @@ class InvestmentPolicy(BasePolicy):
         return sorted(torrents, key=sort_key, reverse=True)
 
     def promote_torrent(self, torrent):
+        """
+        Promotes the torrent to the next investment state. Since investment states alternates in
+        upload and download, the torrent is restarted with new state's upload mode.
+        """
         current_state_id = torrent.mining_state.get('state_id', 0)
         if len(self.investment_states) == current_state_id + 1:
             return
@@ -255,6 +276,9 @@ class InvestmentPolicy(BasePolicy):
                           self.num_uploading_in_iteration, self.num_downloading_in_iteration)
 
     def get_reserved_bytes(self, torrent):
+        """
+        Returns the storage(bytes) required for the torrent to move to next investment state's bandwidth limit.
+        """
         investment_state = self.investment_states[torrent.mining_state.get('state_id', 0)]
         _, downloaed_bytes = torrent.get_storage()
         diff = investment_state.bandwidth_limit - downloaed_bytes

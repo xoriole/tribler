@@ -152,9 +152,6 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
         self.correctedinfoname = u""
         self._checkpoint_disabled = False
 
-        # Credit mining state
-        self.credit_mining_state = None
-
         self.deferreds_resume = []
         self.deferreds_handle = []
         self.deferred_added = Deferred()
@@ -1126,7 +1123,6 @@ class LibtorrentDownloadImpl(DownloadConfigInterface, TaskManager):
                            dlstatus_strings[ds.get_status()], ds.get_progress())
 
         pstate.set('state', 'engineresumedata', None)
-
         return pstate
 
     def set_def(self, tdef):
