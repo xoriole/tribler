@@ -285,26 +285,26 @@ class TestInvestmentPolicy(TriblerCoreTest):
         Infohash, Level, Download, Upload, To start,  ETA,  Status     -->  Expected Result
             0       5        20      16       Yes      0    Downloading     Upload mode
             1       0        4       2        Yes      1    Downloading     Stop
-            2       1        5       8        Yes      1    Seeding         Do nothing
-            3       8        22      23       Yes      1    Seeding         Download mode
+            2       1        5       8        Yes      1    Seeding         Promote -> Download mode
+            3       9        22      23       Yes      1    Seeding         Promote -> Download mode
             4       9        30      25       No       1    Downloading     Stop
             5       0        4       3        Yes      1    Downloading     Stop; stale
             6       12       40      35       Yes      1    Stopped         Download mode
             7       15       50      40       No       1    Seeding         Stop
-            8       18       160     120      Yes      1    Downloading     Do nothing
-            9       19       163     170      Yes      1    Stopped         Upload mode
+            8       18       160     120      Yes      1    Downloading     Do nothing -> Download mode
+            9       19       163     170      Yes      1    Stopped         Promote -> Upload mode
 
         At the end of the iteration, the following result is expected:
         Started = 6         # Includes downloading and seeding torrents
         Stopped = 4
         Upload mode = 2     # New torrents set in upload mode
-        Download mode = 2   # New torrents set in download mode
+        Download mode = 3   # New torrents set in download mode
         """
 
         scenario = MockObject()
         scenario.downloads = [20, 4, 5, 22, 30, 4, 40, 50, 160, 163]
         scenario.uploads = [16, 2, 8, 23, 25, 3, 35, 40, 120, 170]
-        scenario.levels = [5, 0, 1, 8, 9, 0, 12, 15, 18, 19]
+        scenario.levels = [5, 0, 1, 9, 9, 0, 12, 15, 18, 19]
         scenario.to_start = [True, False, True, True, False, True, True, False, True, True]
         scenario.torrent_status = [DLSTATUS_DOWNLOADING, DLSTATUS_DOWNLOADING, DLSTATUS_SEEDING,
                                    DLSTATUS_SEEDING, DLSTATUS_DOWNLOADING, DLSTATUS_DOWNLOADING,
@@ -319,8 +319,8 @@ class TestInvestmentPolicy(TriblerCoreTest):
 
         def get_total_transferred(scenario, torrent, transfer_type):
             if transfer_type == UPLOAD:
-                return scenario.downloads[torrent.infohash]
-            return scenario.uploads[torrent.infohash]
+                return scenario.uploads[torrent.infohash] * MB
+            return scenario.downloads[torrent.infohash] * MB
 
         def get_mining_state(scenario, torrent):
             mining_state = dict()
@@ -352,7 +352,7 @@ class TestInvestmentPolicy(TriblerCoreTest):
 
         self.assertEqual(policy.started_in_iteration, 6)
         self.assertEqual(policy.stopped_in_iteration, 4)
-        self.assertEqual(policy.num_downloading_in_iteration, 2)
+        self.assertEqual(policy.num_downloading_in_iteration, 3)
         self.assertEqual(policy.num_uploading_in_iteration, 2)
 
     def test_investment_policy_run_with_no_downloads(self):

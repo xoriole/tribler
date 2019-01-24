@@ -240,6 +240,7 @@ class InvestmentPolicy(BasePolicy):
             if eta == 0:
                 torrent.download.restart(upload_mode=True)
                 self.num_uploading_in_iteration += 1
+                self.started_in_iteration += 1
                 continue
 
             upload = torrent_state.get_total_transferred(UPLOAD)
@@ -251,11 +252,16 @@ class InvestmentPolicy(BasePolicy):
             if diff_time > WEEK and diff_upload < 5 * MB:
                 torrent.download.stop()
                 self.stopped_in_iteration += 1
+                continue
 
             investment_state = self.investment_states[torrent.mining_state.get('state_id', 0)]
             if torrent.to_start:
                 if investment_state.is_promotion_ready(download, upload):
                     self.promote_torrent(torrent)
+                    if self.investment_states[torrent.mining_state['state_id']].upload_mode:
+                        self.num_uploading_in_iteration += 1
+                    else:
+                        self.num_downloading_in_iteration += 1
                 else:
                     status = torrent_state.get_status()
                     if investment_state.upload_mode and status is not DLSTATUS_SEEDING:
