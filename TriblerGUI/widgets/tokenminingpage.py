@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import datetime
+import logging
 import time
 
 from PyQt5.QtCore import QTimer
@@ -22,6 +23,7 @@ matplotlib.use('Qt5Agg')
 class TokenMiningPlotMplCanvas(FigureCanvas):
 
     def __init__(self, parent=None, width=5, height=5, dpi=100):
+        self._logger = logging.getLogger(self.__class__.__name__)
         fig = Figure(figsize=(width, height), dpi=dpi)
         fig.set_facecolor("#00000000")
 
@@ -44,9 +46,15 @@ class TokenMiningPlotMplCanvas(FigureCanvas):
 
         self.axes.xaxis.set_major_formatter(DateFormatter('%y-%m-%d'))
 
-        self.axes.plot(self.plot_data[1], self.plot_data[0][0], label="Upload(MB)", marker='o')
-        self.axes.plot(self.plot_data[1], self.plot_data[0][1], label="Download(MB)", marker='o')
-        self.axes.grid(True)
+        try:
+            self.axes.plot(self.plot_data[1], self.plot_data[0][0], label="Upload(MB)", marker='o')
+            self.axes.plot(self.plot_data[1], self.plot_data[0][1], label="Download(MB)", marker='o')
+            self.axes.grid(True)
+        except TypeError:
+            self._logger.info("self.plot_data[1]:%s, %s", type(self.plot_data[1]), self.plot_data[1])
+            self._logger.info("self.plot_data[0][0]:%s, %s", type(self.plot_data[0][0]), self.plot_data[0][0])
+            self._logger.info("self.plot_data[0][1]:%s, %s", type(self.plot_data[0][1]), self.plot_data[0][1])
+            raise
 
         for line in self.axes.get_xgridlines() + self.axes.get_ygridlines():
             line.set_linestyle('--')
