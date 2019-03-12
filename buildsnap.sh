@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+docker run -v "$PWD":/build -w /build snapcore/snapcraft bash -c "apt update && snapcraft"
