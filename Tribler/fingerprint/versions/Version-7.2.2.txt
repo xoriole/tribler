@@ -1,0 +1,6 @@
+DualStackDiscoveryCommunity:fjE2hcGRKhQSefgkj8jbWJnF31o=
+TrustChainCommunity:WtdnsFrlkqAkiCcsoqhrhH1FYuE=
+DHTDiscoveryCommunity:ER4TCqaL47uX3DBiK67l6Pqqr6o=
+TriblerTunnelCommunity:7liPegwiuv19KTgJY3o++7rqqp8=
+MarketCommunity:RIZsem4p055dmNdkkgdFx8BYRG0=
+PopularityCommunity:5vIw7Munxz0ADjTxGR/O4Bvsj38=

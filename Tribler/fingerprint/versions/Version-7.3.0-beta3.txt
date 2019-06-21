@@ -1,0 +1,7 @@
+DiscoveryCommunity:fjE2hcGRKhQSefgkj8jbWJnF31o=
+TrustChainCommunity:WtdnsFrlkqAkiCcsoqhrhH1FYuE=
+DHTDiscoveryCommunity:uV+h3c+rv7uhYPA8RBmtSasU448=
+TriblerTunnelCommunity:yvSB/65WK8wPIG/ZiOwNJG3g3JY=
+MarketCommunity:mMH2NC8wUoralkcZfwUD1I25wvs=
+PopularityCommunity:mspi+HiWnEN9qYRMuimhNJF+Fkg=
+GigaChannelCommunity:FOiolH7vDInUoA+pBh89KfBXM1U=

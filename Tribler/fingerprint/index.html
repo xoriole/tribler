@@ -1,0 +1,278 @@
+
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Statistics - Tribler Users</title>
+    <link rel="shortcut icon" href="https://tribler.org/img/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="https://tribler.org/img/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="http://statistics.tribler.org/index.html">
+    <link rel="stylesheet" href="http://jvectormap.com/css/jquery-jvectormap-2.0.3.css" type="text/css" media="screen" />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous" />
+    <style>
+        body {
+            color: #555;
+        }
+
+        h1,
+        h2 {
+            font-weight: bold
+        }
+
+        header {
+            background-color: rgba(2, 2, 2, 0.1);
+            padding: 10px 0;
+            margin-bottom: 30px;
+        }
+
+        header img.tribler-logo {
+            height: 50px;
+            width: 34px;
+            display: inline-block;
+        }
+
+        header h1 {
+            margin-left: 40px;
+            padding-left: 15px;
+            color: #444;
+            margin-top: 6px;
+            font-family: sans-serif;
+            font-weight: bold;
+        }
+
+        .chart-block {
+            height: 400px;
+        }
+
+        .chart-block-header {
+            margin-bottom: 20px;
+            color: #494949;
+        }
+
+        #world-map {
+            height: 400px;
+            padding: 15px;
+            border: 2px solid #ccc;
+        }
+
+        .jvectormap-region {
+            stroke: grey;
+            stroke-width: 1;
+        }
+
+        footer {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+            color: #4e4b4b;
+            padding: 25px 0;
+            background-color: #f6f7d7;
+        }
+    </style>
+    <!--[if lt IE 9]>
+	<script src="/js/html5shiv.js"></script>
+	<![endif]-->
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+        crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/5.4.3/Rx.min.js" integrity="sha256-hRKdKxNWF3kA5HoYA7GoSRILnmbQS4cwv23bJwqJlns="
+        crossorigin="anonymous"></script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111501715-2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-111501715-2');
+    </script>
+    <script>
+	api_server_url = "http://131.180.27.159:8880";
+    </script>
+    <script>
+	stats_endpoint = "http://localhost:8880/stats"
+        window.onload = function () {
+        	storage_available = false;
+		disclaimer_accepted = "NO";
+		$("#disclaimer").show();
+        	if (typeof(Storage) !== "undefined") {
+			storage_available = true;
+			//lastMaxValue = Number(localStorage.getItem("max_users")) || 0;
+                	//lastMinValue = Number(localStorage.getItem("min_users")) || 0;
+			disclaimer_accepted = localStorage.getItem("disclaimer_accepted") || "NO";
+			if(disclaimer_accepted == "YES"){
+				$("#disclaimer").hide();
+			}
+		} else {
+			storage_available = false;
+		}
+
+            var communityNames = {
+                'fVENH4H2PeryAgRk0avfDrFn4C4=': 'TunnelCommunity',
+                'K2LW91pyMHiX9RLs3TjsVTLD68I': 'TunnelCommunity (<=6.5.2)',
+                '+wTfkzaVh+yP2bdFWRhvo1bP/ag=': 'SearchCommunity',
+                'gWT1XC+Chzj6d5Vw5GBagf7JXJ0=': 'AllChannelCommunity',
+                'fjE2hcGRKhQSefgkj8jbWJnF31o=': 'DiscoveryCommunity',
+                'Fa3k9fsPD4AZ2EMEc6q6QwXmF1M=': 'MultichainCommunity'
+            }
+            var peerinfoStream = Rx.Observable.interval(2000)
+                .flatMap(function () {
+                    return Rx.Observable.fromPromise($.get(stats_endpoint))
+                        .catch((err) => Rx.Observable.empty());
+                });
+
+            /*** World Map ***/
+            var gdpData = {};
+            var vectorMap;
+
+            peerinfoStream.first().subscribe(function (data) {
+                gdpData = data["countries"];
+                vectorMap = new jvm.Map({
+                    container: $('#world-map'),
+                    map: 'world_mill',
+                    backgroundColor: '#FFFFFF',
+                    series: {
+                        regions: [{
+                            values: gdpData,
+                            scale: ['#C8EEFF', '#0071A4'],
+                            normalizeFunction: 'polynomial'
+                        }]
+                    },
+                    onRegionTipShow: function (e, el, code) {
+                        el.html(el.html() + ' (Online: ' + (gdpData[code] || 0) + ')');
+                    }
+                });
+            });
+
+            peerinfoStream.subscribe(function (data) {
+                gdpData = data["countries"];
+                if (vectorMap.series !== undefined) {
+                    vectorMap.series.regions[0].setValues(gdpData);
+                }
+            });
+            /*** World Map ***/
+
+            /*** Line Chart ***/
+            var chartDataPoints = []; // dataPoints
+            var lineChart = new CanvasJS.Chart("chartContainer", {
+                animationEnabled: true,
+                axisY: {
+                    includeZero: false
+                },
+                data: [{
+                    type: "line",
+                    name: "Online Tribler Users",
+                    connectNullData: true,
+                    //nullDataLineDashType: "solid",
+                    xValueType: "dateTime",
+                    yValueFormatString: "#,###",
+                    dataPoints: chartDataPoints
+                }]
+            });
+
+            var largest_cid;
+            peerinfoStream.first().subscribe(function (data) {
+                var options = Object.keys(data.services).map(function (key) { return [key, data.services[key]]; });
+                options.sort(function (a, b) { return b[1] - a[1] });
+
+                var select = $('#community');
+                $.each(options, function (index, option) {
+                    select.append($('<option></option>').val(option[0]).html(communityNames[option[0]] || option[0]));
+                });
+
+                largest_cid = options[0][0];
+                select.prepend($('<option></option>').val(largest_cid).html('none'));
+                select.val(largest_cid);
+            });
+
+            $('#community').on('change', function () {
+                chartDataPoints.splice(0, chartDataPoints.length)
+            })
+
+            var dataLength = 50; // number of dataPoints visible at any point
+            peerinfoStream.subscribe(function (data) {
+                chartDataPoints.push({
+                    x: new Date().getTime(),
+                    y: data.services[$('#community').val()] || 0
+                });
+                $("#live_users").html("<span class='label label-success'> Online: " + (data.services[largest_cid] || 0) + "</span>");
+                if (chartDataPoints.length > dataLength) {
+                    chartDataPoints.shift();
+                }
+		$("#unique_users").html("<span class='label label-primary'> Unique: " + (data.unique || data.services[largest_cid]) + "</span>");
+		$("#uptime").html("Crawler running for " + (data.uptime));
+                lineChart.render();
+
+            });
+            /*** Line Chart ***/
+
+	   // Disclaimer
+	   $("#disclaimer_button").click(function(evt){
+		console.log("disclaimer clicked");
+		$("#disclaimer").hide();
+		if(storage_available){
+			localStorage.setItem("disclaimer_accepted", "YES");
+		}
+	   });
+        }
+
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <img class="tribler-logo pull-left" src="https://www.tribler.org/img/tribler-logo.png" alt="Tribler" />
+            <h1>Tribler Statistics</h1>
+        </div>
+        <!-- end container-->
+    </header>
+    <!-- end header -->
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h2 class="chart-block-header">Tribler Users<br/>
+                	<span id="live_users"></span>
+                	<span id="unique_users"></span>
+                	<!--<span id="uptime"></span>-->
+                </h2>
+                <p>Filter by community:
+                    <select id="community">
+                    </select>
+                    <select id="version">
+                    </select>
+                </p>
+                <div class="chart-block" id="chartContainer"></div><hr/>
+		<p id="uptime"></p>
+            </div>
+            <!-- first half -->
+            <div class="col-md-6">
+                <h2 class="chart-block-header">User Distribution</h2>
+                <div class="chart-block" id="world-map"></div>
+            </div>
+            <!-- second half -->
+        </div>
+    </div>
+    <!-- end container -->
+
+    <footer id='disclaimer' style="display:none">
+        <div class="container">
+            <p class="text-warning">
+                <strong>Disclaimer!</strong> These statistics are generated through a network crawl. Nodes in a peer-to-peer
+                network need to know who else is running Tribler. We hide what you do and where you are by adding Tor-like
+                tunnels on top of this basic overlay network. &nbsp;<button id='disclaimer_button' class='btn btn-xs btn-warning'>Ok, don't show again</button>
+            </p>
+        </div>
+    </footer>
+
+    <!-- scripts -->
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script src="http://jvectormap.com/js/jquery-jvectormap-2.0.1.min.js"></script>
+    <script src="http://jvectormap.com/js/jquery-jvectormap-world-mill.js"></script>
+</body>
+
+</html>
+
