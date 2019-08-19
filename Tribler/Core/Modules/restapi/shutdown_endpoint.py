@@ -45,6 +45,9 @@ class ShutdownEndpoint(resource.Resource):
             reactor.addSystemEventTrigger('after', 'shutdown', os._exit, code)
             reactor.stop()
             self.process_checker.remove_lock_file()
+            # Flush all the logs to make sure it is written to file
+            for handler in logging.getLogger().handlers:
+                handler.flush()
 
         def log_and_shutdown(failure):
             self._logger.error(failure.value)
