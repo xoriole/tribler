@@ -34,7 +34,6 @@ TORRENT_CHECK_RETRY_INTERVAL = 30  # Interval when the torrent was successfully 
 
 
 class TorrentChecker(TaskManager):
-
     def __init__(self, session):
         super(TorrentChecker, self).__init__()
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -88,10 +87,12 @@ class TorrentChecker(TaskManager):
         self._should_stop = True
 
         if self.udp_port:
+            self._logger.debug("Stopping Torrent checker UDP socket ...")
             self.session_stop_defer_list.append(maybeDeferred(self.udp_port.stopListening))
             self.udp_port = None
 
         if self.connection_pool:
+            self._logger.debug("Closing Torrent checker HTTP cached connections ...")
             self.session_stop_defer_list.append(self.connection_pool.closeCachedConnections())
 
         self.shutdown_task_manager()
@@ -99,9 +100,15 @@ class TorrentChecker(TaskManager):
         # kill all the tracker sessions.
         # Wait for the defers to all have triggered by using a DeferredList
         for tracker_url in self._session_list.keys():
+            self._logger.debug("Tracker URL: %s, Sessions: %s", tracker_url, len(self._session_list[tracker_url]))
             for session in self._session_list[tracker_url]:
                 self.session_stop_defer_list.append(session.cleanup())
 
+        self._logger.debug(
+            "Stopping %d torrent checker sessions of %d trackers",
+            len(self.session_stop_defer_list),
+            len(self._session_list.keys()),
+        )
         return DeferredList(self.session_stop_defer_list)
 
     def check_random_tracker(self):
