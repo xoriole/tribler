@@ -1,0 +1,16 @@
+PyQt5
+psutil
+configobj
+chardet
+Twisted>=17.9.0
+matplotlib
+networkx
+pony>=0.7.9
+lz4
+cherrypy
+cryptography>=2.3dev1
+libnacl>=1.6.1
+netifaces
+pyOpenSSL
+six
+bitcoinlib==0.4.5
