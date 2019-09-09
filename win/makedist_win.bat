@@ -71,7 +71,7 @@ mkdir dist\tribler\tools
 copy win\tools\reset*.bat dist\tribler\tools
 
 REM Laurens, 2016-04-20: Copy the redistributables of 2008, 2012 and 2015 and the VLC installer to the install dir
-copy C:\build\vc_redist_110.exe dist\tribler
+IF %BUILDER_PYTHON_VERSION% == "2" ( copy C:\build\vc_redist_110.exe dist\tribler )
 copy C:\build\vc_redist_140.exe dist\tribler
 
 REM Copy various libraries required on runtime (libsodium and openssl)
