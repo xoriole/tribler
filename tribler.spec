@@ -4,12 +4,13 @@ block_cipher = None
 
 import imp
 import os
-import sys
 import shutil
+import sys
+
+from Tribler.Core.version import version_id
 
 sys.path.insert(0, os.getcwd())
 
-from Tribler.Core.version import version_id
 
 version_str = version_id.split('-')[0]
 
@@ -61,10 +62,10 @@ pony_deps = ['pony', 'pony.orm', 'pony.orm.dbproviders', 'pony.orm.dbproviders.s
 sys.modules['FixTk'] = None
 
 a = Analysis(['run_tribler.py'],
-             pathex=['/Users/martijndevos/Documents/tribler'],
+             pathex=[],
              binaries=None,
              datas=data_to_copy,
-             hiddenimports=['csv', 'ecdsa', 'pyaes', 'scrypt', '_scrypt', 'sqlalchemy', 'sqlalchemy.ext.baked', 'sqlalchemy.ext.declarative', 'requests', 'PyQt5.QtTest', 'pyqtgraph'] + widget_files + pony_deps,
+             hiddenimports=['csv', 'numpy', 'ecdsa', 'pyaes', 'scrypt', '_scrypt', 'sqlalchemy', 'sqlalchemy.ext.baked', 'sqlalchemy.ext.declarative', 'requests', 'PyQt5.QtTest', 'pyqtgraph'] + widget_files + pony_deps,
              hookspath=[],
              runtime_hooks=[],
              excludes=excluded_libs,

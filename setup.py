@@ -4,7 +4,6 @@ from setuptools import find_packages, setup
 
 from Tribler.Core.version import version_id
 
-
 with open('README.rst', 'r') as f:
     long_description = f.read()
 
@@ -31,6 +30,41 @@ setup(
     version=str(version_id),
     url='https://github.com/Tribler/tribler',
     author='Tribler team from Delft University of Technology',
+    author_email='info@tribler.org',
     package_data={'': ['*.*']},
     packages=find_packages() + data_dirs,
+    install_requires=[
+        "PyQt5",
+        "Twisted",
+        "cryptography",
+        "libnacl",
+        "pony",
+        "lz4",
+        "psutil",
+        "networkx",
+        "pyqtgraph",
+        "matplotlib",
+        "chardet",
+        "cherrypy",
+        "configobj",
+        "netifaces",
+        "six",
+        "bitcoinlib"
+    ],
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Framework :: Twisted",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Distributed Computing",
+        "Topic :: System :: Networking"
+    ]
 )
