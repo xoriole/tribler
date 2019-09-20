@@ -23,9 +23,9 @@ if [ "$UNAME" = "Linux" ]; then
         echo "Couldn't cd to $TRIBLER_DIR. Check permissions."
         exit 1
     }
-    python2.7 $TRIBLER_SCRIPT "$@"
+    python3 $TRIBLER_SCRIPT "$@"
 elif [ ! -z `uname -s | grep CYGWIN_NT` ]; then
-    python $TRIBLER_SCRIPT "$@"
+    python3 $TRIBLER_SCRIPT "$@"
 else
     if [ "$UNAME" = "Darwin" ]; then
         if [ ! -e $TRIBLER_SCRIPT ]; then
@@ -35,6 +35,6 @@ else
             echo "./$(basename $0)"
             exit 1
         fi
-        python2.7 $TRIBLER_SCRIPT "$@"
+        python3 $TRIBLER_SCRIPT "$@"
     fi
 fi

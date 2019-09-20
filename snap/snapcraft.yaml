@@ -1,12 +1,13 @@
 name: tribler-bittorrent
 version: latest
 version-script: cat $SNAPCRAFT_STAGE/version
-summary: Decentralized BitTorrent client
+summary: Tribler
 description: >
-  Open source decentralized BitTorrent client which allows anonymous peer-to-peer downloads by default.
+  Privacy using Tor-inspired anonymous onion routing
 
-grade: devel
+grade: stable
 confinement: classic
+base: core18
 
 architectures:
   - build-on: amd64
@@ -36,103 +37,28 @@ parts:
       - locales-all
       - xdg-user-dirs
       - fcitx-frontend-qt5
-  tribler-deps:
-    plugin: nil
-    stage-packages:
-      - ffmpeg
-      - libssl-dev
-      - libx11-6
-      - vlc
-      - python-apsw
-      - python-cherrypy3
-      - python-keyring
-      - python-keyrings.alt
-      - python-libtorrent
-      - python-m2crypto
-      - python-meliae
-      - python-pil
-      - python-pyqt5
-      - python-pyqt5.qtsvg
-      - python-scipy
-      - python-subprocess32
-      - libxcb-xinerama0
-      - libfontconfig1-dev
-      - libfreetype6-dev
-      - libx11-dev
-      - libxext-dev
-      - libxfixes-dev
-      - libxi-dev
-      - libxrender-dev
-      - libxcb1-dev
-      - libx11-xcb-dev
-      - libxcb-glx0-dev
-      - libxcb-keysyms1-dev
-      - libxcb-image0-dev
-      - libxcb-shm0-dev
-      - libxcb-icccm4-dev
-      - libxcb-sync0-dev
-      - libxcb-xfixes0-dev
-      - libxcb-shape0-dev
-      - libxcb-randr0-dev
-      - libxcb-render-util0-dev
-
-  ipv8-deps:
+  python-deps:
     plugin: python
     python-version: python2
-    source: https://github.com/Tribler/py-ipv8.git
-    source-type: git
-    source-branch: master
-    source-depth: 1
-    requirements: requirements.txt
+    source: .
     python-packages:
-      - yappi
-      - bitcoinlib
-      - chardet
-      - configobj
-      - decorator
-      - dnspython
-      - ecdsa
-      - feedparser
-      - jsonrpclib
-      - leveldb
-      - matplotlib
-      - netifaces
-      - networkx
-      - pbkdf2
-      - pony
-      - protobuf
-      - psutil
-      - pyaes
-      - pyasn1
-      - pysocks
-      - requests
-      - service_identity
+      - matplotlib==2.0.2
+      - pony>=0.7.9
       - lz4
-    build-packages:
-      - python-dev
-      - python-pip
-      - python-pkg-resources
-      - python-setuptools
-    stage-packages:
-      - python
-      - python-distutils-extra
-
   tribler:
     after:
+      - python-deps
       - desktop-qt5
-      - tribler-deps
-      - ipv8-deps
-    plugin: python
-    python-version: python2
-    source: https://github.com/Tribler/tribler.git
-    source-type: git
-    source-branch: devel
-    source-depth: 1
+    plugin: dump
+    source-type: deb
+    source: https://github.com/Tribler/tribler/releases/download/v7.3.0/tribler_7.3.0_all.deb
     override-build: |
-      VERSION=$(git describe --tags|cut -d- -f1,2)
+      DEB_API="https://github.com/Tribler/tribler/releases/download/v7.3.0/tribler_7.3.0_all.deb"
+      VERSION=$(echo $DEB_API| rev | cut -d/ -f1|rev|cut -d_ -f2|cut -d'-' -f 1,2)
       echo $VERSION > $SNAPCRAFT_STAGE/version
 
-      cp -r ./ ${SNAPCRAFT_PART_INSTALL}/usr/share/tribler
+      snapcraftctl build
+
       set -ex
       for dir in $SNAPCRAFT_PART_INSTALL/usr/lib/*/; do
         (cd $dir;
@@ -144,22 +70,12 @@ parts:
          fi
          )
       done
-    build-packages:
-      - python-tk
-      - python-faulthandler
-      - python-libtorrent
-      - libblas3
-      - libblas-dev
-      - libxcomposite1
-      - libxcursor1
-      - libxinerama1
-      - libatk1.0-0
-      - libgtk2.0-0
-      - liblapack3
+      chmod +x $SNAPCRAFT_PART_INSTALL/usr/share/tribler/run_tribler.py
     stage-packages:
-      - python-tk
-      - python-faulthandler
-      - python-libtorrent
+      - libgpm2
+      - libglu1-mesa
+      - libslang2
+      - libatlas-base-dev
       - libblas3
       - libblas-dev
       - libxcomposite1
@@ -173,16 +89,63 @@ parts:
       - libxcb-icccm4
       - libxcb-image0
       - libxcb-render-util0
+      - python2.7
+      - python-minimal
+      - python-pip
+      - python-six
+      - python-apsw
+      - python-chardet
+      - python-cherrypy3
+      - python-configobj
+      - python-cryptography
+      - python-decorator
+      - python-feedparser
+      - python-leveldb
+      - python-libnacl
+      - python-libtorrent
+      - python-m2crypto
+      - python-numpy
+      - python-meliae
+      - python-netifaces
+      - python-networkx
+      - python-pil
+      - python-psutil
+      - python-pyqt5
+      - python-pyqt5.qtsvg
+      - python-twisted
+      - python-socks
+      - python-pyqtgraph
+      - vlc
+      - python-faulthandler
+      - python-tk
+      - libappindicator3-1
+      - libasound2
+      - libcurl3-gnutls
+      - libgconf-2-4
+      - libgtk-3-0
+      - libnotify4
+      - libnspr4
+      - libnss3
+      - libpcre3
+      - libpulse0
+      - libxss1
+      - libxtst6
+      - qtwayland5
 
 apps:
+  tribler:
+    command: usr/bin/python ${SNAP}/usr/share/tribler/run_tribler.py "$@" > `mktemp tmp/$USER-tribler-XXXXXXXX.log` 2>&1
   tribler-bittorrent:
     command: desktop-launch ${SNAP}/usr/bin/python ${SNAP}/usr/share/tribler/run_tribler.py
+    environment:
+      DISABLE_WAYLAND: 1
     plugs:
       - desktop
       - desktop-legacy
+      - wayland
+      - unity7
       - home
       - network
       - network-bind
-      - unity7
       - pulseaudio
       - network-manager
