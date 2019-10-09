@@ -104,9 +104,7 @@ class TrustPage(QWidget):
         # Convert all dates to a datetime object
         num_bandwidth_blocks = 0
         for block in self.blocks:
-            print("received blocks:", repr(block["type"]))
             if block["type"] != "tribler_bandwidth":
-                print("continue:", repr(block["type"]))
                 continue
 
             num_bandwidth_blocks += 1
