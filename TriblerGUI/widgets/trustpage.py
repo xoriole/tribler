@@ -5,7 +5,7 @@ import time
 
 from PyQt5.QtWidgets import QWidget
 
-from TriblerGUI.defs import PAGE_MARKET, PAGE_TOKEN_MINING_PAGE, TB, GB
+from TriblerGUI.defs import GB, PAGE_MARKET, PAGE_TOKEN_MINING_PAGE, TB
 from TriblerGUI.dialogs.trustexplanationdialog import TrustExplanationDialog
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.widgets.tokenminingpage import TimeSeriesPlot
