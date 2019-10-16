@@ -534,7 +534,7 @@ class TriblerLaunchMany(TaskManager):
                 if self.bootstrap and not self.bootstrap.bootstrap_finished and hexlify(
                         infohash) == self.session.config.get_bootstrap_infohash() and self.trustchain_community:
                     if download.deferred_flushed.called:
-                        with open(self.bootstrap.bootstrap_file, 'r') as f:
+                        with self.bootstrap.bootstrap_file.open(mode='r') as f:
                             sql_dumb = text_type(f.read())
                         self._logger.info("Executing script for trustchain bootstrap")
                         self.trustchain_community.persistence.executescript(sql_dumb)
