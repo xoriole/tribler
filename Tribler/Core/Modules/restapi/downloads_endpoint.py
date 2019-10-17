@@ -20,6 +20,7 @@ from Tribler.Core.Config.download_config import DownloadConfig
 from Tribler.Core.Modules.MetadataStore.serialization import CHANNEL_TORRENT, ChannelMetadataPayload
 from Tribler.Core.Modules.MetadataStore.store import UNKNOWN_CHANNEL, UPDATED_OUR_VERSION
 from Tribler.Core.Modules.restapi.util import return_handled_exception
+from Tribler.Core.Utilities import path_util
 from Tribler.Core.Utilities.torrent_utils import get_info_from_handle
 from Tribler.Core.Utilities.unicode import hexlify, recursive_unicode
 from Tribler.Core.Utilities.utilities import unichar_string
@@ -263,7 +264,7 @@ class DownloadsEndpoint(DownloadBaseEndpoint):
                 # Maximum upload/download rates are set for entire sessions
                 "max_upload_speed": self.session.config.get_libtorrent_max_upload_rate(),
                 "max_download_speed": self.session.config.get_libtorrent_max_download_rate(),
-                "destination": download.config.get_dest_dir(),
+                "destination": path_util.Path(download.config.get_dest_dir()).to_text(),
                 "availability": state.get_availability(),
                 "total_pieces": tdef.get_nr_pieces(),
                 "vod_mode": download.config.get_mode() == DLMODE_VOD,

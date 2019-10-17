@@ -8,6 +8,7 @@ from binascii import unhexlify
 from collections import Counter
 from distutils.version import LooseVersion
 
+from Tribler.Core.Utilities import path_util
 from anydex.wallet.bandwidth_block import TriblerBandwidthBlock
 
 from ipv8.attestation.trustchain.block import EMPTY_PK
@@ -68,7 +69,7 @@ class TriblerTunnelCommunity(HiddenTunnelCommunity):
         self.bandwidth_wallet = kwargs.pop('bandwidth_wallet', None)
         socks_listen_ports = kwargs.pop('socks_listen_ports', None)
         state_path = self.tribler_session.config.get_state_dir() if self.tribler_session else ''
-        self.exitnode_cache = kwargs.pop('exitnode_cache', os.path.join(state_path, 'exitnode_cache.dat'))
+        self.exitnode_cache = kwargs.pop('exitnode_cache', path_util.join(state_path, 'exitnode_cache.dat'))
         super(TriblerTunnelCommunity, self).__init__(*args, **kwargs)
         self._use_main_thread = True
 
@@ -143,10 +144,10 @@ class TriblerTunnelCommunity(HiddenTunnelCommunity):
 
         :returns: None
         """
-        if os.path.isfile(self.exitnode_cache):
+        if path_util.isfile(self.exitnode_cache):
             self.logger.debug('Loading exit nodes from cache: %s', self.exitnode_cache)
             exit_nodes = Network()
-            with open(self.exitnode_cache, 'rb') as cache:
+            with self.exitnode_cache.open('rb') as cache:
                 exit_nodes.load_snapshot(cache.read())
             for exit_node in exit_nodes.get_walkable_addresses():
                 self.endpoint.send(exit_node, self.create_introduction_request(exit_node))

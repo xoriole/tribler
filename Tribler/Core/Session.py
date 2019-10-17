@@ -23,7 +23,7 @@ from Tribler.Core.Config.tribler_config import TriblerConfig
 from Tribler.Core.Modules.restapi.rest_manager import RESTManager
 from Tribler.Core.Notifier import Notifier
 from Tribler.Core.Upgrade.upgrade import TriblerUpgrader
-from Tribler.Core.Utilities import torrent_utils
+from Tribler.Core.Utilities import torrent_utils, path_util
 from Tribler.Core.Utilities.crypto_patcher import patch_crypto_be_discovery
 from Tribler.Core.exceptions import NotYetImplementedException, OperationNotEnabledByConfigurationException
 from Tribler.Core.simpledefs import (
@@ -94,11 +94,11 @@ class Session(object):
         """Create directory structure of the state directory."""
 
         def create_dir(path):
-            if not os.path.isdir(path):
+            if not path_util.isdir(path):
                 os.makedirs(path)
 
         def create_in_state_dir(path):
-            create_dir(os.path.join(self.config.get_state_dir(), path))
+            create_dir(path_util.join(self.config.get_state_dir(), path))
 
         create_dir(self.config.get_state_dir())
         create_in_state_dir(STATEDIR_DB_DIR)
@@ -119,24 +119,24 @@ class Session(object):
         Set parameters that depend on state_dir.
         """
         trustchain_pairfilename = self.config.get_trustchain_keypair_filename()
-        if os.path.exists(trustchain_pairfilename):
+        if path_util.exists(trustchain_pairfilename):
             self.trustchain_keypair = permid_module.read_keypair_trustchain(trustchain_pairfilename)
         else:
             self.trustchain_keypair = permid_module.generate_keypair_trustchain()
 
             # Save keypair
-            trustchain_pubfilename = os.path.join(self.config.get_state_dir(), 'ecpub_multichain.pem')
+            trustchain_pubfilename = path_util.join(self.config.get_state_dir(), 'ecpub_multichain.pem')
             permid_module.save_keypair_trustchain(self.trustchain_keypair, trustchain_pairfilename)
             permid_module.save_pub_key_trustchain(self.trustchain_keypair, trustchain_pubfilename)
 
         trustchain_testnet_pairfilename = self.config.get_trustchain_testnet_keypair_filename()
-        if os.path.exists(trustchain_testnet_pairfilename):
+        if path_util.exists(trustchain_testnet_pairfilename):
             self.trustchain_testnet_keypair = permid_module.read_keypair_trustchain(trustchain_testnet_pairfilename)
         else:
             self.trustchain_testnet_keypair = permid_module.generate_keypair_trustchain()
 
             # Save keypair
-            trustchain_testnet_pubfilename = os.path.join(self.config.get_state_dir(), 'ecpub_trustchain_testnet.pem')
+            trustchain_testnet_pubfilename = path_util.join(self.config.get_state_dir(), 'ecpub_trustchain_testnet.pem')
             permid_module.save_keypair_trustchain(self.trustchain_testnet_keypair, trustchain_testnet_pairfilename)
             permid_module.save_pub_key_trustchain(self.trustchain_testnet_keypair, trustchain_testnet_pubfilename)
 
@@ -500,7 +500,7 @@ class Session(object):
         Returns the directory in which to checkpoint the Downloads in this
         Session. This function is called by the network thread.
         """
-        return os.path.join(self.config.get_state_dir(), STATEDIR_CHECKPOINT_DIR)
+        return path_util.join(self.config.get_state_dir(), STATEDIR_CHECKPOINT_DIR)
 
     def get_ipv8_instance(self):
         if not self.config.get_ipv8_enabled():

@@ -6,6 +6,7 @@ import logging
 import os
 import sqlite3
 
+from Tribler.Core.Utilities import path_util
 from ipv8.database import database_blob
 
 from pony import orm
@@ -268,13 +269,13 @@ class DispersyToPonyMigration(object):
 
             with db_session:
                 my_channel = self.mds.ChannelMetadata.get_my_channel()
-                folder = os.path.join(my_channel._channels_dir, my_channel.dirname)
+                folder = path_util.join(my_channel._channels_dir, my_channel.dirname)
 
                 # We check if we need to re-create the channel dir in case it was deleted for some reason
-                if not os.path.isdir(folder):
+                if not path_util.isdir(folder):
                     os.makedirs(folder)
                 for filename in os.listdir(folder):
-                    file_path = os.path.join(folder, filename)
+                    file_path = path_util.join(folder, filename)
                     # We only remove mdblobs and leave the rest as it is
                     if filename.endswith(BLOB_EXTENSION) or filename.endswith(BLOB_EXTENSION + '.lz4'):
                         os.unlink(file_path)
@@ -511,7 +512,7 @@ def should_upgrade(old_database_path, new_database_path, logger=None):
     Decide if we can migrate data from old DB to Pony
     :return: False if something goes wrong, or we don't need/cannot migrate data
     """
-    if not os.path.exists(old_database_path):
+    if not path_util.exists(old_database_path):
         # no old DB to upgrade
         return False
 
@@ -522,7 +523,7 @@ def should_upgrade(old_database_path, new_database_path, logger=None):
         logger.error("Can't open the old tribler.sdb file")
         return False
 
-    if os.path.exists(new_database_path):
+    if path_util.exists(new_database_path):
         try:
             if not new_db_version_ok(new_database_path):
                 return False

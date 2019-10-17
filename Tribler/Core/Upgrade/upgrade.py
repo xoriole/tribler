@@ -15,31 +15,32 @@ from Tribler.Core.Modules.MetadataStore.OrmBindings.channel_metadata import CHAN
 from Tribler.Core.Modules.MetadataStore.store import MetadataStore
 from Tribler.Core.Upgrade.config_converter import convert_config_to_tribler71, convert_config_to_tribler74
 from Tribler.Core.Upgrade.db72_to_pony import DispersyToPonyMigration, cleanup_pony_experimental_db, should_upgrade
+from Tribler.Core.Utilities import path_util
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
 from Tribler.Core.simpledefs import NTFY_FINISHED, NTFY_STARTED, NTFY_UPGRADER, NTFY_UPGRADER_TICK
 
 
 def cleanup_noncompliant_channel_torrents(state_dir):
     logger = logging.getLogger(__name__)
-    channels_dir = os.path.join(state_dir, "channels")
+    channels_dir = path_util.join(state_dir, "channels")
     # Remove torrents contents
-    if os.path.exists(channels_dir):
-        for d in os.listdir(channels_dir):
-            if len(os.path.splitext(d)[0]) != CHANNEL_DIR_NAME_LENGTH:
-                dir_path = os.path.join(channels_dir, d)
+    if path_util.exists(channels_dir):
+        for d in channels_dir.iterdir():
+            if len(os.path.splitext(d.to_text())[0]) != CHANNEL_DIR_NAME_LENGTH:
+                dir_path = path_util.join(channels_dir, d)
                 # We remove both malformed channel dirs and .torrent and .mdblob files for personal channel
-                if os.path.isdir(dir_path):
-                    shutil.rmtree(dir_path, ignore_errors=True)
-                elif os.path.isfile(dir_path):
-                    os.unlink(dir_path)
+                if path_util.isdir(dir_path):
+                    shutil.rmtree(dir_path.to_text(), ignore_errors=True)
+                elif path_util.isfile(dir_path):
+                    os.unlink(dir_path.to_text())
 
     # Remove .state torrent resume files
-    resume_dir = os.path.join(state_dir, "dlcheckpoints")
-    if os.path.exists(resume_dir):
-        for f in os.listdir(resume_dir):
+    resume_dir = path_util.join(state_dir, "dlcheckpoints")
+    if path_util.exists(resume_dir):
+        for f in resume_dir.iterdir():
             if not f.endswith('.state'):
                 continue
-            file_path = os.path.join(resume_dir, f)
+            file_path = path_util.join(resume_dir, f)
             pstate = CallbackConfigParser()
             try:
                 pstate.read_file(file_path)
@@ -97,9 +98,9 @@ class TriblerUpgrader(object):
         and breaking it in smaller chunks as we do with 72_to_pony.
         """
         # We have to create the Metadata Store object because the LaunchManyCore has not been started yet
-        database_path = os.path.join(self.session.config.get_state_dir(), 'sqlite', 'metadata.db')
-        channels_dir = os.path.join(self.session.config.get_chant_channels_dir())
-        if not os.path.exists(database_path):
+        database_path = path_util.join(self.session.config.get_state_dir(), 'sqlite', 'metadata.db')
+        channels_dir = path_util.join(self.session.config.get_chant_channels_dir())
+        if not path_util.exists(database_path):
             return succeed(None)
         mds = MetadataStore(database_path, channels_dir, self.session.trustchain_keypair, disable_sync=True)
         with db_session:
@@ -134,12 +135,12 @@ class TriblerUpgrader(object):
         self.current_status = status_text
 
     def upgrade_72_to_pony(self):
-        old_database_path = os.path.join(self.session.config.get_state_dir(), 'sqlite', 'tribler.sdb')
-        new_database_path = os.path.join(self.session.config.get_state_dir(), 'sqlite', 'metadata.db')
-        channels_dir = os.path.join(self.session.config.get_chant_channels_dir())
+        old_database_path = path_util.join(self.session.config.get_state_dir(), 'sqlite', 'tribler.sdb')
+        new_database_path = path_util.join(self.session.config.get_state_dir(), 'sqlite', 'metadata.db')
+        channels_dir = path_util.join(self.session.config.get_chant_channels_dir())
 
-        if os.path.exists(new_database_path):
-            cleanup_pony_experimental_db(new_database_path)
+        if path_util.exists(new_database_path):
+            cleanup_pony_experimental_db(new_database_path.to_text())
             cleanup_noncompliant_channel_torrents(self.session.config.get_state_dir())
 
         self._dtp72 = DispersyToPonyMigration(old_database_path, self.update_status, logger=self._logger)

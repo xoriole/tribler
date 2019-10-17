@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 
+from Tribler.Core.Utilities import path_util
 from ipv8.taskmanager import TaskManager
 
 from pony.orm import db_session
@@ -49,12 +50,12 @@ class GigaChannelManager(TaskManager):
                 my_channel = self.session.lm.mds.ChannelMetadata.get_my_channel()
                 if my_channel and my_channel.status == COMMITTED and \
                         not self.session.has_download(bytes(my_channel.infohash)):
-                    torrent_path = os.path.join(self.session.lm.mds.channels_dir, my_channel.dirname + ".torrent")
-                    mdblob_path = os.path.join(self.session.lm.mds.channels_dir, my_channel.dirname + ".mdblob")
+                    torrent_path = path_util.join(self.session.lm.mds.channels_dir, my_channel.dirname + ".torrent")
+                    mdblob_path = path_util.join(self.session.lm.mds.channels_dir, my_channel.dirname + ".mdblob")
                     tdef = None
-                    if os.path.exists(torrent_path) and os.path.exists(mdblob_path):
+                    if path_util.exists(torrent_path) and path_util.exists(mdblob_path):
                         try:
-                            tdef = TorrentDef.load(torrent_path)
+                            tdef = TorrentDef.load(torrent_path.to_text())
                         except IOError:
                             self._logger.warning("Can't open personal channel torrent file. Will try to regenerate it.")
                     if not(tdef and bytes(tdef.infohash) == bytes(my_channel.infohash)):
@@ -174,7 +175,7 @@ class GigaChannelManager(TaskManager):
             obsolete_version_files = set(download.get_tdef().get_files())
             files_to_remove_relative = obsolete_version_files - current_version_files
             for f in files_to_remove_relative:
-                files_to_remove.append(os.path.join(dirname, f))
+                files_to_remove.append(path_util.join(dirname, f))
         return files_to_remove
     """
 
@@ -245,7 +246,7 @@ class GigaChannelManager(TaskManager):
     def process_channel_dir_threaded(self, channel):
 
         def _process_download():
-            channel_dirname = os.path.join(self.session.lm.mds.channels_dir, channel.dirname)
+            channel_dirname = path_util.join(self.session.lm.mds.channels_dir, channel.dirname)
             self.session.lm.mds.process_channel_dir(channel_dirname, channel.public_key, channel.id_,
                                                     external_thread=True)
             self.session.lm.mds._db.disconnect()

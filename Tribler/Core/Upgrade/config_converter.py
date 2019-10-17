@@ -15,6 +15,7 @@ from six import PY3
 from six.moves.configparser import DuplicateSectionError, MissingSectionHeaderError, NoSectionError, RawConfigParser
 
 from Tribler.Core.Config.tribler_config import TriblerConfig
+from Tribler.Core.Utilities import path_util
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
 from Tribler.Core.exceptions import InvalidConfigException
 from Tribler.Core.simpledefs import STATEDIR_CHECKPOINT_DIR
@@ -211,13 +212,13 @@ def convert_config_to_tribler74(state_dir=None):
         refactoring_tool = RefactoringTool(fixer_names=get_fixers_from_package('lib2to3.fixes'))
 
     state_dir = state_dir or TriblerConfig.get_default_state_dir()
-    for _, filename in enumerate(iglob(os.path.join(state_dir, STATEDIR_CHECKPOINT_DIR, '*.state'))):
+    for filename in path_util.join(state_dir, STATEDIR_CHECKPOINT_DIR).glob('*.state'):
         old_config = CallbackConfigParser()
         try:
-            old_config.read_file(filename)
+            old_config.read_file(filename.to_text())
         except MissingSectionHeaderError:
             logger.error("Removing download state file %s since it appears to be corrupt", filename)
-            os.remove(filename)
+            os.remove(filename.to_text())
 
         # We first need to fix the .state file such that it has the correct metainfo/resumedata
         for section, option in [('state', 'metainfo'), ('state', 'engineresumedata')]:
@@ -231,14 +232,14 @@ def convert_config_to_tribler74(state_dir=None):
                 old_config.set(section, option, base64.b64encode(lt.bencode(value)).decode('utf-8'))
             except (ValueError, SyntaxError):
                 logger.error("Removing download state file %s since it could not be converted", filename)
-                os.remove(filename)
+                os.remove(filename.to_text())
                 continue
 
         # Remove dlstate since the same information is already stored in the resumedata
         if old_config.has_option('state', 'dlstate'):
             old_config.remove_option('state', 'dlstate')
 
-        new_config = ConfigObj(infile=filename[:-6] + '.conf', encoding='utf8')
+        new_config = ConfigObj(infile=filename.to_text()[:-6] + '.conf', encoding='utf8')
         for section in old_config.sections():
             for key, _ in old_config.items(section):
                 val = old_config.get(section, key)
@@ -246,4 +247,4 @@ def convert_config_to_tribler74(state_dir=None):
                     new_config[section] = {}
                 new_config[section][key] = val
         new_config.write()
-        os.remove(filename)
+        os.remove(filename.to_text())

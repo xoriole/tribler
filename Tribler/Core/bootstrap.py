@@ -6,6 +6,7 @@ from binascii import unhexlify
 
 from Tribler.Core.Config.download_config import DownloadConfig
 from Tribler.Core.TorrentDef import TorrentDef, TorrentDefNoMetainfo
+from Tribler.Core.Utilities import path_util
 from Tribler.Core.Utilities.unicode import hexlify
 
 
@@ -19,12 +20,12 @@ class Bootstrap(object):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.dcfg = DownloadConfig(state_dir=config_dir)
         self.dcfg.set_bootstrap_download(True)
-        self.bootstrap_dir = os.path.join(config_dir, 'bootstrap')
-        if not os.path.exists(self.bootstrap_dir):
+        self.bootstrap_dir = path_util.join(config_dir, 'bootstrap')
+        if not path_util.exists(self.bootstrap_dir):
             os.mkdir(self.bootstrap_dir)
         self.dcfg.set_dest_dir(self.bootstrap_dir)
-        self.bootstrap_file = os.path.join(self.bootstrap_dir, "bootstrap.blocks")
-        self.nodes_file = os.path.join(self.bootstrap_dir, "bootstrap.nodes")
+        self.bootstrap_file = path_util.join(self.bootstrap_dir, "bootstrap.blocks")
+        self.nodes_file = path_util.join(self.bootstrap_dir, "bootstrap.nodes")
         self.dht = dht
 
         self.bootstrap_finished = False
@@ -68,15 +69,15 @@ class Bootstrap(object):
         return self.bootstrap_nodes
 
     def persist_nodes(self):
-        with open(self.nodes_file, "wb") as boot_file:
+        with self.nodes_file.open(mode="wb") as boot_file:
             for mid, public_key in self.bootstrap_nodes.items():
                 if mid != "0000000000000000000000000000000000000000" and public_key:
                     boot_file.write((u"%s:%s\n" % (mid, public_key)).encode('utf-8'))
 
     def load_bootstrap_nodes(self):
-        if not os.path.exists(self.nodes_file):
+        if not path_util.exists(self.nodes_file):
             return
-        with open(self.nodes_file, "r") as boot_file:
+        with self.nodes_file.open(mode="r") as boot_file:
             for line in boot_file:
                 if line and ":" in line:
                     mid, pub_key = line.rstrip().split(":")

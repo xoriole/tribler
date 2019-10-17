@@ -69,7 +69,7 @@ class TestConfigUpgrade70to71(TriblerCoreTest):
         """
         old_config = RawConfigParser()
         old_config.read(os.path.join(self.CONFIG_PATH, "libtriblercorrupt70.conf"))
-        new_config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH))
+        new_config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH.to_text()))
 
         result_config = add_libtribler_config(new_config, old_config)
 

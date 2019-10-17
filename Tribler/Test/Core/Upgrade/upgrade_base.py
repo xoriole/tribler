@@ -23,6 +23,6 @@ class AbstractUpgrader(TriblerCoreTest):
     @inlineCallbacks
     def setUp(self):
         yield super(AbstractUpgrader, self).setUp()
-        self.config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH))
+        self.config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH.to_text()))
         self.config.set_state_dir(self.getStateDir())
         self.session = Session(self.config)

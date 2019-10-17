@@ -5,6 +5,7 @@ import os
 from configobj import ConfigObj
 
 from Tribler.Core.Config.tribler_config import CONFIG_FILENAME, CONFIG_SPEC_PATH, TriblerConfig
+from Tribler.Core.Utilities import path_util
 from Tribler.Core.osutils import get_home_dir
 from Tribler.Test.Core.base_test import TriblerCoreTest
 
@@ -21,7 +22,7 @@ class TestTriblerConfig(TriblerCoreTest):
         super(TestTriblerConfig, self).setUp()
 
         state_dir = self.getStateDir()
-        self.tribler_config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH, default_encoding='utf-8'))
+        self.tribler_config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH.to_text(), default_encoding='utf-8'))
         self.tribler_config.set_state_dir(state_dir)
 
         self.assertIsNotNone(self.tribler_config)
@@ -31,7 +32,7 @@ class TestTriblerConfig(TriblerCoreTest):
         When creating a new instance with a configobject provided, the given options
         must be contained in the resulting instance.
         """
-        configdict = ConfigObj({"a": 1, "b": "2"}, configspec=CONFIG_SPEC_PATH)
+        configdict = ConfigObj({"a": 1, "b": "2"}, configspec=CONFIG_SPEC_PATH.to_text())
         self.tribler_config = TriblerConfig(configdict)
 
         self.tribler_config.validate()
@@ -141,10 +142,10 @@ class TestTriblerConfig(TriblerCoreTest):
         self.assertEqual(self.tribler_config.get_state_dir(), "TEST")
 
         self.assertEqual(self.tribler_config.get_trustchain_testnet_keypair_filename(),
-                         os.path.join("TEST", "ec_trustchain_testnet.pem"))
+                         path_util.join("TEST", "ec_trustchain_testnet.pem"))
         self.tribler_config.set_trustchain_testnet_keypair_filename("bla2")
         self.assertEqual(self.tribler_config.get_trustchain_testnet_keypair_filename(),
-                         os.path.join("TEST", "bla2"))
+                         path_util.join("TEST", "bla2"))
 
         self.tribler_config.set_testnet(True)
         self.assertTrue(self.tribler_config.get_testnet())
@@ -251,7 +252,7 @@ class TestTriblerConfig(TriblerCoreTest):
         self.tribler_config.set_default_safeseeding_enabled(True)
         self.assertEqual(self.tribler_config.get_default_safeseeding_enabled(), True)
         self.tribler_config.set_default_destination_dir(get_home_dir())
-        self.assertEqual(self.tribler_config.get_default_destination_dir(), get_home_dir())
+        self.assertEqual(self.tribler_config.get_default_destination_dir(), path_util.Path(get_home_dir()))
         self.tribler_config.set_tunnel_community_random_slots(10)
         self.assertEqual(self.tribler_config.get_tunnel_community_random_slots(), 10)
         self.tribler_config.set_tunnel_community_competing_slots(20)
@@ -274,7 +275,7 @@ class TestTriblerConfig(TriblerCoreTest):
         self.assertFalse(self.tribler_config.get_chant_enabled())
         self.tribler_config.set_chant_channels_dir('test')
         self.assertEqual(self.tribler_config.get_chant_channels_dir(),
-                         os.path.join(self.tribler_config.get_state_dir(), 'test'))
+                         path_util.join(self.tribler_config.get_state_dir(), 'test'))
 
     def test_get_set_is_matchmaker(self):
         """

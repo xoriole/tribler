@@ -12,6 +12,7 @@ from six import StringIO
 from twisted.web import resource
 
 import Tribler.Core.Utilities.json_util as json
+from Tribler.Core.Utilities import path_util
 from Tribler.Core.Utilities.instrumentation import WatchDog
 from Tribler.Core.Utilities.unicode import recursive_unicode
 
@@ -417,20 +418,20 @@ class DebugLogEndpoint(resource.Resource):
         # Get the location of log file
         args = recursive_unicode(request.args)
         param_process = args['process'][0] if args['process'] else 'core'
-        log_file_name = os.path.join(self.session.config.get_log_dir(), 'tribler-%s-info.log' % param_process)
+        log_file_name = path_util.join(self.session.config.get_log_dir(), 'tribler-%s-info.log' % param_process)
 
         # Default response
         response = {'content': '', 'max_lines': 0}
 
         # Check if log file exists and return last requested 'max_lines' of log
-        if os.path.exists(log_file_name):
+        if path_util.exists(log_file_name):
             try:
                 max_lines = int(args['max_lines'][0])
-                with open(log_file_name, 'r') as log_file:
+                with log_file_name.open(mode='r') as log_file:
                     response['content'] = self.tail(log_file, max_lines)
                 response['max_lines'] = max_lines
             except ValueError:
-                with open(log_file_name, 'r') as log_file:
+                with log_file_name.open(mode='r') as log_file:
                     response['content'] = self.tail(log_file, 100)  # default 100 lines
                 response['max_lines'] = 0
 

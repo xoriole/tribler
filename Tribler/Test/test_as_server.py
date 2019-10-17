@@ -299,7 +299,7 @@ class TestAsServer(AbstractServer):
         self.annotate(self._testMethodName, start=True)
 
     def setUpPreSession(self):
-        self.config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH, default_encoding='utf-8'))
+        self.config = TriblerConfig(ConfigObj(configspec=CONFIG_SPEC_PATH.to_text(), default_encoding='utf-8'))
         self.config.set_default_destination_dir(self.dest_dir)
         self.config.set_state_dir(self.getStateDir())
         self.config.set_torrent_checking_enabled(False)

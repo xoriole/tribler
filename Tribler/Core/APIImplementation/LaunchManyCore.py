@@ -15,6 +15,7 @@ from glob import iglob
 from threading import Event, enumerate as enumerate_threads
 from traceback import print_exc
 
+from Tribler.Core.Utilities import path_util
 from anydex.wallet.dummy_wallet import DummyWallet1, DummyWallet2
 from anydex.wallet.tc_wallet import TrustchainWallet
 
@@ -129,7 +130,7 @@ class TriblerLaunchMany(TaskManager):
         # On Mac, we bundle the root certificate for the SSL validation since Twisted is not using the root
         # certificates provided by the system trust store.
         if sys.platform == 'darwin':
-            os.environ['SSL_CERT_FILE'] = os.path.join(get_lib_path(), 'root_certs_mac.pem')
+            os.environ['SSL_CERT_FILE'] = path_util.join(get_lib_path(), 'root_certs_mac.pem')
 
         if self.session.config.get_video_server_enabled():
             self.video_server = VideoServer(self.session.config.get_video_server_port(), self.session)
@@ -267,7 +268,7 @@ class TriblerLaunchMany(TaskManager):
         if self.session.config.get_bitcoinlib_enabled():
             try:
                 from anydex.wallet.btc_wallet import BitcoinWallet, BitcoinTestnetWallet
-                wallet_path = os.path.join(self.session.config.get_state_dir(), 'wallet')
+                wallet_path = path_util.join(self.session.config.get_state_dir(), 'wallet')
                 btc_wallet = BitcoinWallet(wallet_path)
                 btc_testnet_wallet = BitcoinTestnetWallet(wallet_path)
                 self.wallets[btc_wallet.get_identifier()] = btc_wallet
@@ -276,9 +277,9 @@ class TriblerLaunchMany(TaskManager):
                 self._logger.error("bitcoinlib library cannot be loaded: %s", exc)
 
         if self.session.config.get_chant_enabled():
-            channels_dir = os.path.join(self.session.config.get_chant_channels_dir())
+            channels_dir = path_util.join(self.session.config.get_chant_channels_dir())
             metadata_db_name = 'metadata.db' if not self.session.config.get_testnet() else 'metadata_testnet.db'
-            database_path = os.path.join(self.session.config.get_state_dir(), 'sqlite', metadata_db_name)
+            database_path = path_util.join(self.session.config.get_state_dir(), 'sqlite', metadata_db_name)
             self.mds = MetadataStore(database_path, channels_dir, self.session.trustchain_keypair)
 
         if self.session.config.get_dummy_wallets_enabled():
@@ -352,7 +353,7 @@ class TriblerLaunchMany(TaskManager):
 
             # Create the destination directory if it does not exist yet
             try:
-                if not os.path.isdir(config.get_dest_dir()):
+                if not path_util.isdir(config.get_dest_dir()):
                     os.makedirs(config.get_dest_dir())
             except OSError:
                 self._logger.error("Unable to create the download destination directory.")
@@ -580,8 +581,8 @@ class TriblerLaunchMany(TaskManager):
 
         def do_load_checkpoint():
             with self.session_lock:
-                for i, filename in enumerate(iglob(os.path.join(self.session.get_downloads_config_dir(), '*.conf'))):
-                    self.resume_download(filename, setupDelay=i * 0.1)
+                for i, filename in enumerate(self.session.get_downloads_config_dir().glob('*.conf')):
+                    self.resume_download(filename.to_text(), setupDelay=i * 0.1)
 
         if self.initComplete:
             do_load_checkpoint()
@@ -674,7 +675,7 @@ class TriblerLaunchMany(TaskManager):
                 hexinfohash = hexlify(infohash)
                 try:
                     basename = hexinfohash + '.conf'
-                    filename = os.path.join(config_dir, basename)
+                    filename = path_util.join(config_dir, basename)
                     self._logger.debug("remove download config: removing dlcheckpoint entry %s", filename)
                     if os.access(filename, os.F_OK):
                         os.remove(filename)
@@ -810,8 +811,8 @@ class TriblerLaunchMany(TaskManager):
     def load_download_config_by_infohash(self, infohash):
         try:
             basename = hexlify(infohash) + '.conf'
-            filename = os.path.join(self.session.get_downloads_config_dir(), basename)
-            if os.path.exists(filename):
+            filename = path_util.join(self.session.get_downloads_config_dir(), basename)
+            if path_util.exists(filename):
                 return self.load_download_config(filename)
             else:
                 self._logger.info("%s not found", basename)
