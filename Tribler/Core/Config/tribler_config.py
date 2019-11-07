@@ -18,6 +18,7 @@ from Tribler.Core.Utilities.network_utils import get_random_port
 from Tribler.Core.Utilities.unicode import ensure_unicode
 from Tribler.Core.exceptions import InvalidConfigException
 from Tribler.Core.osutils import get_appstate_dir
+from Tribler.Core.version import version_id
 
 CONFIG_FILENAME = 'triblerd.conf'
 SPEC_FILENAME = 'tribler_config.spec'
@@ -103,6 +104,7 @@ class TriblerConfig(object):
         """
         if not os.path.exists(self.get_state_dir()):
             os.makedirs(self.get_state_dir())
+        self.update_version()
         self.config.filename = os.path.join(self.get_state_dir(), CONFIG_FILENAME)
         self.config.write()
 
@@ -111,9 +113,10 @@ class TriblerConfig(object):
         """Get the default application state directory."""
         if 'TSTATEDIR' in os.environ:
             path = os.environ['TSTATEDIR']
-            return path if os.path.isabs(path) else os.path.join(os.getcwd(), path)
+            path = path if os.path.isabs(path) else os.path.join(os.getcwd(), path)
+            return os.path.join(path, version_id)
 
-        return os.path.join(get_appstate_dir(), home_dir_postfix)
+        return os.path.join(get_appstate_dir(), home_dir_postfix, version_id)
 
     def _obtain_port(self, section, option):
         """
@@ -134,6 +137,16 @@ class TriblerConfig(object):
             self.selected_ports[path] = get_random_port()
             self._logger.debug(u"Get random port %d for [%s]", self.selected_ports[path], path)
         return self.selected_ports[path]
+
+    # Version
+    def set_version(self, version):
+        self.config['general']['version'] = version
+
+    def get_version(self):
+        return self.config['general']['version']
+
+    def update_version(self):
+        self.config['general']['version'] = version_id
 
     # Chant
     def set_chant_enabled(self, value):
