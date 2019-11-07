@@ -10,7 +10,8 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QSizePolicy, QWidget
 import Tribler.Core.Utilities.json_util as json
 
 from TriblerGUI.defs import BUTTON_TYPE_CONFIRM, BUTTON_TYPE_NORMAL, DEFAULT_API_PORT, PAGE_SETTINGS_ANONYMITY, \
-    PAGE_SETTINGS_BANDWIDTH, PAGE_SETTINGS_CONNECTION, PAGE_SETTINGS_DEBUG, PAGE_SETTINGS_GENERAL, PAGE_SETTINGS_SEEDING
+    PAGE_SETTINGS_BANDWIDTH, PAGE_SETTINGS_CONNECTION, PAGE_SETTINGS_DEBUG, PAGE_SETTINGS_GENERAL, \
+    PAGE_SETTINGS_SEEDING, PAGE_SETTINGS_UPGRADE
 from TriblerGUI.dialogs.confirmationdialog import ConfirmationDialog
 from TriblerGUI.tribler_request_manager import TriblerRequestManager
 from TriblerGUI.utilities import get_checkbox_style, get_gui_setting, is_dir_writable, seconds_to_hhmm_string, \
@@ -232,7 +233,9 @@ class SettingsPage(QWidget):
         if not settings:
             return
         self.settings = settings
+        print("self settings:", self.settings)
         settings = settings["settings"]
+        print("settings:", settings)
         gui_settings = self.window().gui_settings
 
         self.window().settings_stacked_widget.show()
@@ -313,6 +316,9 @@ class SettingsPage(QWidget):
         self.window().slider_cpu_level.valueChanged.connect(self.show_updated_cpu_priority)
         self.window().checkbox_enable_network_statistics.setChecked(settings['ipv8']['statistics'])
 
+        # Upgrade tab
+        self.window().value_current_version.setText(settings['general']['version'])
+
     def update_anonymity_cost_label(self, value):
         html_text = """<html><head/><body><p>Download with <b>%d</b> hop(s) of anonymity. 
         When you download a file of 200 Megabyte, you will pay roughly <b>%d</b>
@@ -344,6 +350,8 @@ class SettingsPage(QWidget):
             self.window().settings_stacked_widget.setCurrentIndex(PAGE_SETTINGS_ANONYMITY)
         elif tab_button_name == "settings_debug_button":
             self.window().settings_stacked_widget.setCurrentIndex(PAGE_SETTINGS_DEBUG)
+        elif tab_button_name == "settings_upgrade_button":
+            self.window().settings_stacked_widget.setCurrentIndex(PAGE_SETTINGS_UPGRADE)
 
         self.update_stacked_widget_height()
 
