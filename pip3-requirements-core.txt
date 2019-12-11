@@ -1,0 +1,14 @@
+psutil
+configobj
+Twisted
+PyOpenSSL
+chardet
+libnacl
+pyasn1
+lz4
+pony
+cherrypy
+service_identity
+decorator
+networkx
+cryptography
