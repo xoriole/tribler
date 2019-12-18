@@ -222,10 +222,11 @@ def convert_config_to_tribler74(state_dir=None):
         for section, option in [('state', 'metainfo'), ('state', 'engineresumedata')]:
             value = old_config.get(section, option, literal_eval=False)
             ungarbled_dict = None
-            if PY3:
-                value = str(refactoring_tool.refactor_string(value+'\n', option + '_2to3'))
-                ungarbled_dict = recursive_ungarble_metainfo(ast.literal_eval(value))
             try:
+                if PY3:
+                    value = str(refactoring_tool.refactor_string(value+'\n', option + '_2to3'))
+                    ungarbled_dict = recursive_ungarble_metainfo(ast.literal_eval(value))
+
                 value = ungarbled_dict or ast.literal_eval(value)
                 old_config.set(section, option, base64.b64encode(lt.bencode(value)).decode('utf-8'))
             except (ValueError, SyntaxError):
