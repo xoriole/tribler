@@ -43,7 +43,7 @@ class TriblerConfig(object):
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self._root_state_dir = self.get_default_root_state_dir()
-        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, tribler_version.version_id)
+        self._state_dir = os.path.join(self._root_state_dir, tribler_version.version_id)
 
         if config is None:
             config_file = os.path.join(self._state_dir, CONFIG_FILENAME)
@@ -119,13 +119,6 @@ class TriblerConfig(object):
 
         return os.path.join(get_appstate_dir(), home_dir_postfix)
 
-    @staticmethod
-    def get_versioned_state_dir(state_dir, version):
-        dash_index = version.find('-')
-        if dash_index < 0:
-            return ensure_unicode(os.path.join(state_dir, version), 'utf-8')
-        return ensure_unicode(os.path.join(state_dir, version[:dash_index], version[dash_index+1:]), 'utf-8')
-
     def _obtain_port(self, section, option):
         """
         Fetch a port setting from the config file and in case it's set to -1 (random), look for a free port
@@ -181,13 +174,13 @@ class TriblerConfig(object):
         """
         self._root_state_dir = root_dir
         _version_id = version_id if version_id else tribler_version.version_id
-        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, _version_id)
+        self._state_dir = os.path.join(self._root_state_dir, _version_id)
 
     def get_root_state_dir(self):
         return self._root_state_dir
 
     def get_state_dir(self, version_id=None):
-        return TriblerConfig.get_versioned_state_dir(self._root_state_dir, version_id) if version_id \
+        return os.path.join(self._root_state_dir, version_id) if version_id \
             else ensure_unicode(self._state_dir, 'utf-8')
 
     def set_trustchain_keypair_filename(self, keypairfilename):

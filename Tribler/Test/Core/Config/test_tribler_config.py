@@ -140,7 +140,7 @@ class TestTriblerConfig(TriblerCoreTest):
         self.assertEqual(self.tribler_config.get_root_state_dir(), "TEST")
 
         # State directory is now versioned
-        expected_state_dir = TriblerConfig.get_versioned_state_dir("TEST", tribler_version.version_id)
+        expected_state_dir = os.path.join("TEST", tribler_version.version_id)
         self.assertEqual(self.tribler_config.get_state_dir(), expected_state_dir)
 
         self.tribler_config.set_version('7.0.0-GIT')

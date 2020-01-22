@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import logging
 import os
 import shutil
-from pathlib import Path
 
 from pony.orm import db_session
 
@@ -11,16 +10,14 @@ from six.moves.configparser import MissingSectionHeaderError, ParsingError
 
 from twisted.internet.defer import succeed
 
-from Tribler.Core import version
 from Tribler.Core.Category.l2_filter import is_forbidden
 from Tribler.Core.Modules.MetadataStore.OrmBindings.channel_metadata import CHANNEL_DIR_NAME_LENGTH
 from Tribler.Core.Modules.MetadataStore.store import MetadataStore
 from Tribler.Core.Upgrade.config_converter import convert_config_to_tribler71, convert_config_to_tribler74
 from Tribler.Core.Upgrade.db72_to_pony import DispersyToPonyMigration, cleanup_pony_experimental_db, should_upgrade
+from Tribler.Core.Upgrade.version_manager import VersionManager
 from Tribler.Core.Utilities.configparser import CallbackConfigParser
-from Tribler.Core.osutils import dir_copy
-from Tribler.Core.simpledefs import NTFY_FINISHED, NTFY_STARTED, NTFY_UPGRADER, NTFY_UPGRADER_TICK, \
-    STATEDIR_CHANNELS_DIR, STATEDIR_CHECKPOINT_DIR, STATEDIR_DB_DIR, STATEDIR_WALLET_DIR
+from Tribler.Core.simpledefs import NTFY_FINISHED, NTFY_STARTED, NTFY_UPGRADER, NTFY_UPGRADER_TICK
 
 
 def cleanup_noncompliant_channel_torrents(state_dir):
@@ -77,6 +74,8 @@ class TriblerUpgrader(object):
         self._dtp72 = None
         self.skip_upgrade_called = False
 
+        self.version_manager = VersionManager(self.session)
+
     def skip(self):
         self.skip_upgrade_called = True
         if self._dtp72:
@@ -89,10 +88,13 @@ class TriblerUpgrader(object):
         Note that by default, upgrading is enabled in the config. It is then disabled
         after upgrading to Tribler 7.
         """
+        # Before any upgrade, prepare a separate state directory for the update version so it does not affect the
+        # older version state directory. This allows for safe rollback.
+        self.version_manager.setup_state_directory_for_upgrade()
+
         d = self.upgrade_72_to_pony()
         d.addCallback(self.upgrade_pony_db_6to7)
         self.upgrade_config_to_74()
-        self.backup_state_directory()
         return d
 
     def upgrade_pony_db_6to7(self, _):
@@ -178,57 +180,6 @@ class TriblerUpgrader(object):
         """
         self.session.config = convert_config_to_tribler71(self.session.config)
         self.session.config.write()
-
-    def backup_state_directory(self):
-        """
-        Backs up the current state directory if the version in the state directory and in the code is different.
-        """
-        if not self.session.config.get_version_backup_enabled():
-            return
-
-        current_version = self.get_tribler_version()
-        if current_version != version.version_id:
-            # If current version is None, then the code is pre 7.4, so use .Tribler (root dir) as the state directory
-            # instead of versioned directory inside the .Tribler.
-            current_state_dir = Path(self.session.config.get_state_dir(version_id=current_version)
-                                     if current_version else self.session.config.get_root_state_dir())
-            new_state_dir = Path(self.session.config.get_state_dir(version_id=version.version_id))
-
-            # If only there is no tribler config already in the new state directory,
-            # then we assume that this is a new version so we copy the last state directory and upgrade it.
-            new_conf_path = new_state_dir / 'triblerd.conf'
-            if not new_conf_path.exists():
-                # Copy the selected directories from the current state directory to the new one.
-                upgrade_dirs = [STATEDIR_DB_DIR, STATEDIR_CHECKPOINT_DIR, STATEDIR_WALLET_DIR, STATEDIR_CHANNELS_DIR]
-                src_sub_dirs = os.listdir(current_state_dir)
-                for upgrade_dir in upgrade_dirs:
-                    if upgrade_dir in src_sub_dirs:
-                        dir_copy(current_state_dir / upgrade_dir, new_state_dir / upgrade_dir)
-
-                # Copy other important files: keys and config
-                extra_files = ['ec_multichain.pem', 'ecpub_multichain.pem', 'ec_trustchain_testnet.pem',
-                               'ecpub_trustchain_testnet.pem', 'triblerd.conf']
-                for extra_file in extra_files:
-                    if os.path.exists(current_state_dir / extra_file):
-                        shutil.copy(current_state_dir / extra_file, new_state_dir / extra_file)
-
-            # Update the current version to version_id
-            self.set_tribler_version(version.version_id)
-
-    def get_tribler_version(self):
-        """
-        Returns the last version recorded in .version file else None.
-        """
-        version_file = Path(self.session.config.get_root_state_dir(), ".version")
-        if version_file.exists():
-            return version_file.read_text().strip()
-        return None
-
-    def set_tribler_version(self, new_version):
-        """
-        Updates the version to .version file in the state directory.
-        """
-        Path(self.session.config.get_root_state_dir(), ".version").write_text(new_version)
 
     def notify_starting(self):
         """

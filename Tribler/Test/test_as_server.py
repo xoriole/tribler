@@ -33,7 +33,7 @@ from twisted.web.http import HTTPChannel
 from twisted.web.server import Site
 from twisted.web.static import File
 
-from Tribler.Core import version
+from Tribler.Core import version as tribler_version
 from Tribler.Core.Config.download_config import DownloadConfig
 from Tribler.Core.Config.tribler_config import CONFIG_SPEC_PATH, TriblerConfig
 from Tribler.Core.Session import Session
@@ -144,7 +144,7 @@ class AbstractServer(BaseTestCase):
 
         self.session_base_dir = self.temporary_directory(suffix=u"_tribler_test_session_")
         self.root_state_dir = os.path.join(self.session_base_dir, u"dot.Tribler")
-        self.state_dir = TriblerConfig.get_versioned_state_dir(self.root_state_dir, version.version_id)
+        self.state_dir = os.path.join(self.root_state_dir, tribler_version.version_id)
         self.dest_dir = os.path.join(self.session_base_dir, u"TriblerDownloads")
 
         # Wait until the reactor has started
