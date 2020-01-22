@@ -331,7 +331,6 @@ class TestDHTSession(TriblerCoreTest):
     def setUp(self):
         super(TestDHTSession, self).setUp()
 
-        state_dir = self.getRootStateDir()
         config = TriblerConfig()
 
         self.session = Session(config)

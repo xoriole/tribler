@@ -261,7 +261,7 @@ def dir_copy(src_dir, dest_dir):
         if e.errno == errno.ENOTDIR:
             shutil.copy(src_dir, dest_dir)
         else:
-            logging.error(f"Directory {src_dir} could not be imported", e)
+            logging.error("Directory %s could not be imported", src_dir)
 
 
 def merge_dir(src_dir, dest_dir):
