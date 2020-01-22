@@ -138,7 +138,7 @@ def add_libtribler_config(new_config, old_config):
 
             temp_config = config.copy()
             if section == "general" and name == "state_dir":
-                temp_config.set_state_dir(value)
+                temp_config.set_root_state_dir(value)
             elif section == "general" and name == "log_dir":
                 temp_config.set_log_dir(value)
             elif section == "tunnel_community" and name == "enabled":

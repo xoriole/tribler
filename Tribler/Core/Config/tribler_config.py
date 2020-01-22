@@ -12,13 +12,13 @@ from six import text_type
 
 from validate import Validator
 
+from Tribler.Core import version as tribler_version
 from Tribler.Core.Config.download_config import get_default_dest_dir
 from Tribler.Core.Utilities.install_dir import get_lib_path
 from Tribler.Core.Utilities.network_utils import get_random_port
 from Tribler.Core.Utilities.unicode import ensure_unicode
 from Tribler.Core.exceptions import InvalidConfigException
 from Tribler.Core.osutils import get_appstate_dir
-from Tribler.Core.version import version_id
 
 CONFIG_FILENAME = 'triblerd.conf'
 SPEC_FILENAME = 'tribler_config.spec'
@@ -41,10 +41,10 @@ class TriblerConfig(object):
         :raises an InvalidConfigException if ConfigObj is invalid
         """
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._state_dir = self.get_default_state_dir()
-        # If specific version state directory is available, use that version otherwise use default address
-        if not os.path.exists(self._state_dir):
-            self._state_dir = self.get_default_base_state_dir()
+
+        self._root_state_dir = self.get_default_base_state_dir()
+        self._version_id = tribler_version.version_id
+        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, self._version_id)
 
         if config is None:
             config_file = os.path.join(self._state_dir, CONFIG_FILENAME)
@@ -112,7 +112,7 @@ class TriblerConfig(object):
         self.config.write()
 
     @staticmethod
-    def get_default_state_dir(home_dir_postfix=u'.Tribler', version=version_id):
+    def get_default_state_dir(home_dir_postfix=u'.Tribler', version=tribler_version.version_id):
         """Get the default application state directory."""
         state_dir = TriblerConfig.get_default_base_state_dir(home_dir_postfix=home_dir_postfix)
         return TriblerConfig.get_versioned_state_dir(state_dir, version)
@@ -161,7 +161,7 @@ class TriblerConfig(object):
         return self.config['general']['version']
 
     def update_version(self):
-        self.config['general']['version'] = version_id
+        self.config['general']['version'] = tribler_version.version_id
 
     def set_version_backup_enabled(self, backup_enabled):
         self.config['general']['version_backup_enabled'] = backup_enabled
@@ -182,11 +182,19 @@ class TriblerConfig(object):
     def get_chant_channels_dir(self):
         return self.abspath(self.config['chant']['channels_dir'])
 
-    def set_state_dir(self, state_dir):
-        self._state_dir = state_dir
+    def set_root_state_dir(self, root_dir, version_id=None):
+        """
+        Sets the root state directory for Tribler. The versioning is handled automatically.
+        """
+        self._root_state_dir = root_dir
+        self._version_id = version_id if version_id else tribler_version.version_id
+        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, self._version_id)
 
-    def get_state_dir(self, version=None):
-        return TriblerConfig.get_versioned_state_dir(self._state_dir, version) if version \
+    def get_root_state_dir(self):
+        return self._root_state_dir
+
+    def get_state_dir(self, version_id=None):
+        return TriblerConfig.get_versioned_state_dir(self._root_state_dir, version_id) if version_id \
             else ensure_unicode(self._state_dir, 'utf-8')
 
     def set_trustchain_keypair_filename(self, keypairfilename):

@@ -331,9 +331,8 @@ class TestDHTSession(TriblerCoreTest):
     def setUp(self):
         super(TestDHTSession, self).setUp()
 
-        state_dir = self.getStateDir()
+        state_dir = self.getRootStateDir()
         config = TriblerConfig()
-        config.get_default_state_dir = lambda _: state_dir
 
         self.session = Session(config)
         self.session.lm.ltmgr = MockObject()
