@@ -265,7 +265,7 @@ def dir_copy(src_dir, dest_dir):
 
 
 def merge_dir(src_dir, dest_dir):
-    for src_sub_dir, dirs, files in os.walk(src_dir):
+    for src_sub_dir, _dirs, files in os.walk(src_dir):
         dest_sub_dir = src_sub_dir.replace(str(src_dir), str(dest_dir), 1)
         if not os.path.exists(dest_sub_dir):
             os.makedirs(dest_sub_dir)
