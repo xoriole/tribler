@@ -42,9 +42,8 @@ class TriblerConfig(object):
         """
         self._logger = logging.getLogger(self.__class__.__name__)
 
-        self._root_state_dir = self.get_default_base_state_dir()
-        self._version_id = tribler_version.version_id
-        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, self._version_id)
+        self._root_state_dir = self.get_default_root_state_dir()
+        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, tribler_version.version_id)
 
         if config is None:
             config_file = os.path.join(self._state_dir, CONFIG_FILENAME)
@@ -112,13 +111,7 @@ class TriblerConfig(object):
         self.config.write()
 
     @staticmethod
-    def get_default_state_dir(home_dir_postfix=u'.Tribler', version=tribler_version.version_id):
-        """Get the default application state directory."""
-        state_dir = TriblerConfig.get_default_base_state_dir(home_dir_postfix=home_dir_postfix)
-        return TriblerConfig.get_versioned_state_dir(state_dir, version)
-
-    @staticmethod
-    def get_default_base_state_dir(home_dir_postfix=u'.Tribler'):
+    def get_default_root_state_dir(home_dir_postfix=u'.Tribler'):
         """Get the default application state directory."""
         if 'TSTATEDIR' in os.environ:
             path = os.environ['TSTATEDIR']
@@ -187,8 +180,8 @@ class TriblerConfig(object):
         Sets the root state directory for Tribler. The versioning is handled automatically.
         """
         self._root_state_dir = root_dir
-        self._version_id = version_id if version_id else tribler_version.version_id
-        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, self._version_id)
+        _version_id = version_id if version_id else tribler_version.version_id
+        self._state_dir = self.get_versioned_state_dir(self._root_state_dir, _version_id)
 
     def get_root_state_dir(self):
         return self._root_state_dir

@@ -91,8 +91,8 @@ class TriblerUpgrader(object):
         """
         d = self.upgrade_72_to_pony()
         d.addCallback(self.upgrade_pony_db_6to7)
-        self.backup_state_directory()
         self.upgrade_config_to_74()
+        self.backup_state_directory()
         return d
 
     def upgrade_pony_db_6to7(self, _):
