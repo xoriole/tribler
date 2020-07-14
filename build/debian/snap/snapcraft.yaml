@@ -1,5 +1,5 @@
 name: tribler-bittorrent
-version: __VERSION__
+version: 7.5.2-7-g52d4a1715
 summary: Tribler
 description: >
   Peer-to-peer Bittorrent client with enhanced privacy. Search and download torrents with less worries or censorship.
@@ -104,6 +104,8 @@ parts:
 apps:
   tribler-bittorrent:
     command: bin/desktop-launch $SNAP/usr/share/tribler/tribler
+    environment:
+      HOME: /home/$USER
     plugs:
       - desktop
       - desktop-legacy
