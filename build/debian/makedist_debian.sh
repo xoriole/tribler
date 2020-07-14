@@ -29,9 +29,11 @@ if [ "$BUILD_TRIBLER_SNAP" == "false" ]; then
 fi
 
 # Build snap with docker if exists
-if [ -x "$(command -v docker)" ]; then
+if [ "$BUILD_SNAP_IN_DOCKER" == "true" ]; then
     echo "Running snapcraft in docker"
     cd build/debian && docker run -v "$PWD":/debian -w /debian triblertester/snap_builder:core18 /bin/bash ./build-snap.sh
 else
-    cd build/debian && /bin/bash ./build-snap.sh
+    cd build/debian || exit 1
+    BUILD_ARGS=${SNAP_BUILD_ARGS:-''}
+    snapcraft $BUILD_ARGS
 fi
