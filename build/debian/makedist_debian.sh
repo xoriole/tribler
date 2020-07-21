@@ -19,21 +19,25 @@ python3 -m PyInstaller tribler.spec
 cp -r dist/tribler build/debian/tribler/usr/share/tribler
 
 sed -i "s/__VERSION__/$(cat .TriblerVersion)/g" build/debian/tribler/DEBIAN/control
-sed -i "s/__VERSION__/$(cat .TriblerVersion)/g" build/debian/snap/snapcraft.yaml
+if [[ -f ".snapcraft.yaml" ]]; then
+    sed -i "s/__VERSION__/$(cat .TriblerVersion)/g" .snapcraft.yaml
+fi
+
 
 dpkg-deb -b build/debian/tribler tribler_$(cat .TriblerVersion)_all.deb
 
-# Build Tribler snap if $BUILD_TRIBLER_SNAP
-if [ "$BUILD_TRIBLER_SNAP" == "false" ]; then
-  exit 0
-fi
-
-# Build snap with docker if exists
-if [ "$BUILD_SNAP_IN_DOCKER" == "true" ]; then
-    echo "Running snapcraft in docker"
-    cd build/debian && docker run -v "$PWD":/debian -w /debian triblertester/snap_builder:core18 /bin/bash ./build-snap.sh
-else
-    cd build/debian || exit 1
-    BUILD_ARGS=${SNAP_BUILD_ARGS:-''}
-    snapcraft $BUILD_ARGS
-fi
+## Build Tribler snap if $BUILD_TRIBLER_SNAP
+#if [ "$BUILD_TRIBLER_SNAP" == "false" ]; then
+#  exit 0
+#fi
+#
+## Build snap with docker if exists
+#if [ "$BUILD_SNAP_IN_DOCKER" == "true" ]; then
+#    echo "Running snapcraft in docker"
+#    cd build/debian && docker run -v "$PWD":/debian -w /debian triblertester/snap_builder:core18 /bin/bash ./build-snap.sh
+#else
+#    cd build/debian || exit 1
+#    BUILD_ARGS=${SNAP_BUILD_ARGS:-''}
+#    snapcraft clean
+#    snapcraft $BUILD_ARGS
+#fi

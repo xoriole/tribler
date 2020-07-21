@@ -1,10 +1,10 @@
 name: tribler-bittorrent
-version: 7.5.2-7-g52d4a1715
+version: __VERSION__
 summary: Tribler
 description: >
   Peer-to-peer Bittorrent client with enhanced privacy. Search and download torrents with less worries or censorship.
-grade: devel
-confinement: devmode
+grade: stable
+confinement: classic
 base: core20
 
 architectures:
