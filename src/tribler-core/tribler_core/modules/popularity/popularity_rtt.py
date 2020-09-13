@@ -136,6 +136,6 @@ ensure_future(start_communities())
 get_event_loop().run_forever()
 
 with open('popularity.txt', 'w') as f:
-    f.write('TIME PEERS_CONNECTED PEERS_UNIQUE TORRENTS SEEDEERS_MAX SEEDERS_AVG SEEDERS_ZERO')
+    f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, TORRENTS, SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO')
     for (diff, peers_connected, peers_unique, torrents, seeders_max, seeders_avg, seeders_zero) in RESULTS:
-        f.write('\n%.2f %d %d %d %d %.2f %d' % (diff, peers_connected, peers_unique, torrents, seeders_max, seeders_avg, seeders_zero))
+        f.write('\n%.2f, %d, %d, %d, %d, %.2f, %d' % (diff, peers_connected, peers_unique, torrents, seeders_max, seeders_avg, seeders_zero))
