@@ -1,3 +1,4 @@
+import os
 import time
 from asyncio import ensure_future, get_event_loop
 from random import randint
@@ -24,7 +25,7 @@ from tribler_core.modules.popularity.popularity_community import PopularityCommu
 INSTANCES = []
 START_TIME = time.time()
 RESULTS = []
-LIFETIME = 1 * 60  # 5 minutes
+LIFETIME = int(os.environ.get('EXP_LIFETIME', '60'))  # How long to run this experiment?
 
 
 class MyCommunity(PopularityCommunity):
