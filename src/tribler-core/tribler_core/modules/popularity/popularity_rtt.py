@@ -37,7 +37,11 @@ class MyCommunity(PopularityCommunity):
         self.torrents_filter = CuckooFilter(capacity=10000, bucket_size=4, fingerprint_size=1)
 
         self.unique_peers = 0
+        self.all_torrents = 0
         self.unique_torrents = 0
+        self.duplicate_torrents = 0
+        self.message_count = 0
+
         self.max_seeders = 0
         self.max_leechers = 0
         self.sum_seeders = 0
@@ -51,8 +55,9 @@ class MyCommunity(PopularityCommunity):
             global INSTANCES, START_TIME, RESULTS
 
             diff = time.time() - START_TIME
-            RESULTS.append([int(diff), len(self.get_peers()), self.unique_peers,
-                            self.unique_torrents, self.max_seeders, self.avg_seeders, self.zero_seeders])
+            RESULTS.append([int(diff), len(self.get_peers()), self.unique_peers, self.message_count,
+                            self.all_torrents, self.unique_torrents, self.duplicate_torrents,
+                            self.max_seeders, self.avg_seeders, self.zero_seeders])
 
             if self.get_peers():
                 for peer in self.get_peers():
@@ -70,7 +75,10 @@ class MyCommunity(PopularityCommunity):
                 print(f"time: {int(diff)}, "
                       f"peers (connected): {len(self.get_peers())}, "
                       f"peers (unique): {self.unique_peers}, "
-                      f"torrents: {self.unique_torrents}, "
+                      f"messages: {self.message_count}, "
+                      f"torrents (all): {self.all_torrents}, "
+                      f"torrents (unique): {self.unique_torrents}, "
+                      f"torrents (dup): {self.duplicate_torrents}, "
                       f"seeders (max): {self.max_seeders}, "
                       f"seeders (avg): {self.avg_seeders}, "
                       f"seeders (zero): {self.zero_seeders}")
@@ -79,15 +87,19 @@ class MyCommunity(PopularityCommunity):
 
     @lazy_wrapper(TorrentsHealthPayload)
     async def on_torrents_health(self, _, payload):
-        print("Received torrent health information for %d random torrents and %d checked torrents" %
-              (len(payload.random_torrents), len(payload.torrents_checked)))
         all_torrents = payload.random_torrents + payload.torrents_checked
-        for infohash, seeders, leechers, last_check in all_torrents:
+        self.message_count += 1
+        self.all_torrents += len(all_torrents)
 
-            if not self.torrents_filter.contains(str(infohash)):
+        for infohash, seeders, leechers, last_check in all_torrents:
+            infohash_str = str(infohash)
+
+            if self.torrents_filter.contains(infohash_str):
+                self.duplicate_torrents += 1
+            else:
                 self.unique_torrents += 1
 
-                if self.torrents_filter.insert(str(infohash)):
+                if self.torrents_filter.insert(infohash_str):
                     if seeders > self.max_seeders:
                         self.max_seeders = seeders
                     if leechers > self.max_leechers:
@@ -118,7 +130,7 @@ async def start_communities():
         'key': "my peer",
         'walkers': [{
             'strategy': "RandomWalk",
-            'peers': 10,
+            'peers': 1000,
             'init': {
                 'timeout': 3.0
             }
@@ -136,6 +148,6 @@ ensure_future(start_communities())
 get_event_loop().run_forever()
 
 with open('popularity.txt', 'w') as f:
-    f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, TORRENTS, SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO')
-    for (diff, peers_connected, peers_unique, torrents, seeders_max, seeders_avg, seeders_zero) in RESULTS:
-        f.write('\n%.2f, %d, %d, %d, %d, %.2f, %d' % (diff, peers_connected, peers_unique, torrents, seeders_max, seeders_avg, seeders_zero))
+    f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, MESSAGES, TORRENTS_ALL, TORRENTS_UNIQUE, TORRENTS_DUPLICATES, SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO')
+    for (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate, seeders_max, seeders_avg, seeders_zero) in RESULTS:
+        f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d' % (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate, seeders_max, seeders_avg, seeders_zero))
