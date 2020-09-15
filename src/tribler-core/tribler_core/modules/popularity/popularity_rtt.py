@@ -130,7 +130,7 @@ async def start_communities():
         'key': "my peer",
         'walkers': [{
             'strategy': "RandomWalk",
-            'peers': 1000,
+            'peers': 20,  # Default parameter of deployed popularity community
             'init': {
                 'timeout': 3.0
             }
