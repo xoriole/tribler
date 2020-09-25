@@ -1,4 +1,5 @@
 import os
+import random
 import time
 from asyncio import ensure_future, get_event_loop
 from random import randint
@@ -13,34 +14,33 @@ except ImportError:
 
 from cuckoopy import CuckooFilter
 
-from ipv8.configuration import get_default_configuration
-from ipv8.lazy_community import lazy_wrapper
-
-from ipv8_service import IPv8, _COMMUNITIES
+from ipv8.lazy_community import lazy_wrapper_wd
 
 from tribler_core.modules.popularity.payload import TorrentsHealthPayload
 from tribler_core.modules.popularity.popularity_community import PopularityCommunity
 
 
-INSTANCES = []
 START_TIME = time.time()
 RESULTS = []
 LIFETIME = int(os.environ.get('EXP_LIFETIME', '60'))  # How long to run this experiment?
+HEALTH_CHECK_PERCENTAGE = float(os.environ.get('HEALTH_CHECK_PERCENTAGE', '0.5'))
+HEALTH_CHECK_THRESHOLD = int(os.environ.get('HEALTH_CHECK_THRESHOLD', '10'))
 
 
-class MyCommunity(PopularityCommunity):
+class PopularityCommunityObserver(PopularityCommunity):
 
     def __init__(self, *args, **kwargs):
-        super(MyCommunity, self).__init__(*args, **kwargs)
+        super(PopularityCommunityObserver, self).__init__(*args, **kwargs)
 
         self.peers_filter = CuckooFilter(capacity=10000, bucket_size=4, fingerprint_size=1)
         self.torrents_filter = CuckooFilter(capacity=10000, bucket_size=4, fingerprint_size=1)
 
         self.unique_peers = 0
-        self.all_torrents = 0
+        self.num_torrents = 0
         self.unique_torrents = 0
         self.duplicate_torrents = 0
         self.message_count = 0
+        self.bandwidth_received = 0
 
         self.max_seeders = 0
         self.max_leechers = 0
@@ -50,14 +50,20 @@ class MyCommunity(PopularityCommunity):
         self.avg_leechers = 0
         self.zero_seeders = 0
 
-    def started(self):
+        self.total_dht_checks = 0
+        self.failed_dht_checks = 0
+        self.success_dht_checks = 0
+
+        self.on_start()
+
+    def on_start(self):
         def check_peers():
-            global INSTANCES, START_TIME, RESULTS
+            global START_TIME, RESULTS
 
             diff = time.time() - START_TIME
             RESULTS.append([int(diff), len(self.get_peers()), self.unique_peers, self.message_count,
-                            self.all_torrents, self.unique_torrents, self.duplicate_torrents,
-                            self.max_seeders, self.avg_seeders, self.zero_seeders])
+                            self.num_torrents, self.unique_torrents, self.duplicate_torrents,
+                            self.max_seeders, self.avg_seeders, self.zero_seeders, self.bandwidth_received])
 
             if self.get_peers():
                 for peer in self.get_peers():
@@ -67,8 +73,7 @@ class MyCommunity(PopularityCommunity):
 
                 if diff > LIFETIME:
                     async def shutdown():
-                        for instance in INSTANCES:
-                            await instance.stop(False)
+                        self.on_stop()
                         get_event_loop().stop()
                     ensure_future(shutdown())
 
@@ -76,23 +81,47 @@ class MyCommunity(PopularityCommunity):
                       f"peers (connected): {len(self.get_peers())}, "
                       f"peers (unique): {self.unique_peers}, "
                       f"messages: {self.message_count}, "
-                      f"torrents (all): {self.all_torrents}, "
+                      f"bandwidth: {self.bandwidth_received}, \n  "
+                      f"torrents (all): {self.num_torrents}, "
                       f"torrents (unique): {self.unique_torrents}, "
-                      f"torrents (dup): {self.duplicate_torrents}, "
+                      f"torrents (dup): {self.duplicate_torrents}, \n  "
                       f"seeders (max): {self.max_seeders}, "
                       f"seeders (avg): {self.avg_seeders}, "
-                      f"seeders (zero): {self.zero_seeders}")
+                      f"seeders (zero): {self.zero_seeders}, \n  "
+                      f"dht (total): {self.total_dht_checks}, "
+                      f"dht (failed): {self.failed_dht_checks}")
 
         self.register_task("check_peers", check_peers, interval=5, delay=0)
 
-    @lazy_wrapper(TorrentsHealthPayload)
-    async def on_torrents_health(self, _, payload):
-        all_torrents = payload.random_torrents + payload.torrents_checked
-        self.message_count += 1
-        self.all_torrents += len(all_torrents)
+    def on_stop(self):
+        with open('popularity.txt', 'w') as f:
+            f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, MESSAGES, TORRENTS_ALL, TORRENTS_UNIQUE, TORRENTS_DUPLICATES,'
+                    ' SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO, BANDWIDTH')
+            for (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate,
+                 seeders_max, seeders_avg, seeders_zero, bandwidth) in RESULTS:
+                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f'
+                        % (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique,
+                           torrents_duplicate, seeders_max, seeders_avg, seeders_zero, bandwidth))
 
-        for infohash, seeders, leechers, last_check in all_torrents:
+    @lazy_wrapper_wd(TorrentsHealthPayload)
+    async def on_torrents_health(self, _, payload, data):
+        all_torrents = payload.random_torrents + payload.torrents_checked
+        self.num_torrents += len(all_torrents)
+        self.message_count += 1
+        self.bandwidth_received += len(data)
+
+        chosen_index = -1
+        if random.random() < HEALTH_CHECK_PERCENTAGE:
+            chosen_index = random.randint(0, len(all_torrents))
+
+        for idx, (infohash, seeders, leechers, last_check) in enumerate(all_torrents):
             infohash_str = str(infohash)
+
+            if idx == chosen_index:
+                if seeders == 0:
+                    chosen_index += 1
+                else:
+                    await self.verify_health(infohash, seeders, leechers)
 
             if self.torrents_filter.contains(infohash_str):
                 self.duplicate_torrents += 1
@@ -113,41 +142,9 @@ class MyCommunity(PopularityCommunity):
                     self.avg_seeders = self.sum_seeders / self.unique_torrents
                     self.avg_leechers = self.sum_leechers / self.unique_torrents
 
-
-_COMMUNITIES['MyCommunity'] = MyCommunity
-
-
-async def start_communities():
-    configuration = get_default_configuration()
-    configuration['keys'] = [{
-        'alias': "my peer",
-        'generation': u"medium",
-        'file': u"ec.pem"
-    }]
-    configuration['port'] = 12000 + randint(0, 10000)
-    configuration['overlays'] = [{
-        'class': 'MyCommunity',
-        'key': "my peer",
-        'walkers': [{
-            'strategy': "RandomWalk",
-            'peers': 20,  # Default parameter of deployed popularity community
-            'init': {
-                'timeout': 3.0
-            }
-        }],
-        'initialize': {'metadata_store': None, 'torrent_checker': None},
-        'on_start': [('started', )]
-    }]
-
-    ipv8 = IPv8(configuration)
-    await ipv8.start()
-    INSTANCES.append(ipv8)
-
-
-ensure_future(start_communities())
-get_event_loop().run_forever()
-
-with open('popularity.txt', 'w') as f:
-    f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, MESSAGES, TORRENTS_ALL, TORRENTS_UNIQUE, TORRENTS_DUPLICATES, SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO')
-    for (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate, seeders_max, seeders_avg, seeders_zero) in RESULTS:
-        f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d' % (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate, seeders_max, seeders_avg, seeders_zero))
+    async def verify_health(self, infohash, seeders, leechers):
+        self.total_dht_checks += 1
+        health_data = await self.torrent_checker.check_torrent_health(infohash, scrape_now=False)
+        print(f"health_data received: {health_data}")
+        if 'DHT' in health_data and 'error' in health_data['DHT']:
+            self.failed_dht_checks += 1
