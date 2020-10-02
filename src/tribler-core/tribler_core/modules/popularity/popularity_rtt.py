@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import time
@@ -53,6 +54,10 @@ class PopularityCommunityObserver(PopularityCommunity):
         self.total_dht_checks = 0
         self.failed_dht_checks = 0
         self.success_dht_checks = 0
+        self.dht_dead_torrents = 0
+        self.dht_alive_torrents = 0
+        self.dht_fresh_torrents = 0
+
 
         self.on_start()
 
@@ -64,7 +69,8 @@ class PopularityCommunityObserver(PopularityCommunity):
             RESULTS.append([int(diff), len(self.get_peers()), self.unique_peers, self.message_count,
                             self.num_torrents, self.unique_torrents, self.duplicate_torrents,
                             self.max_seeders, self.avg_seeders, self.zero_seeders, self.bandwidth_received,
-                            self.total_dht_checks, self.failed_dht_checks])
+                            self.total_dht_checks, self.failed_dht_checks, self.success_dht_checks,
+                            self.dht_dead_torrents, self.dht_alive_torrents, self.dht_fresh_torrents])
 
             if self.get_peers():
                 for peer in self.get_peers():
@@ -90,20 +96,26 @@ class PopularityCommunityObserver(PopularityCommunity):
                       f"seeders (avg): {self.avg_seeders}, "
                       f"seeders (zero): {self.zero_seeders}, \n  "
                       f"dht (total): {self.total_dht_checks}, "
-                      f"dht (failed): {self.failed_dht_checks}")
+                      f"dht (failed): {self.failed_dht_checks}, "
+                      f"dht (success): {self.success_dht_checks}, "
+                      f"dht (dead): {self.dht_dead_torrents}, "
+                      f"dht (alive): {self.dht_alive_torrents}, "
+                      f"dht (fresh): {self.dht_fresh_torrents}")
 
         self.register_task("check_peers", check_peers, interval=5, delay=0)
 
     def on_stop(self):
         with open('popularity.txt', 'w') as f:
             f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, MESSAGES, TORRENTS_ALL, TORRENTS_UNIQUE, TORRENTS_DUPLICATES,'
-                    ' SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO, BANDWIDTH, DHT_TOTAL, DHT_FAILED')
+                    ' SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO, BANDWIDTH, DHT_TOTAL, DHT_FAILED, DHT_SUCCESS,'
+                    ' DHT_DEAD, DHT_ALIVE, DHT_FRESH')
             for (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate,
-                 seeders_max, seeders_avg, seeders_zero, bandwidth, dht_total, dht_failed) in RESULTS:
-                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f, %d, %d'
+                 seeders_max, seeders_avg, seeders_zero, bandwidth, dht_total, dht_failed, dht_success,
+                 dht_dead, dht_alive, dht_fresh) in RESULTS:
+                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f, %d, %d, %d, %d, %d, %d'
                         % (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique,
                            torrents_duplicate, seeders_max, seeders_avg, seeders_zero, bandwidth,
-                           dht_total, dht_failed))
+                           dht_total, dht_failed, dht_success, dht_dead, dht_alive, dht_fresh))
 
     @lazy_wrapper_wd(TorrentsHealthPayload)
     async def on_torrents_health(self, _, payload, data):
@@ -148,5 +160,21 @@ class PopularityCommunityObserver(PopularityCommunity):
         self.total_dht_checks += 1
         health_data = await self.torrent_checker.check_torrent_health(infohash, scrape_now=False)
         print(f"health_data received: {health_data}")
-        if 'DHT' in health_data and 'error' in health_data['DHT']:
+
+        if not health_data or ('DHT' in health_data and 'error' in health_data['DHT']):
             self.failed_dht_checks += 1
+            return
+
+        self.success_dht_checks += 1
+
+        actual_seeders = health_data['DHT']['seeders']
+        actual_leechers = health_data['DHT']['leechers']
+
+        if actual_seeders == 0 and actual_leechers == 0:
+            self.dht_dead_torrents += 1
+            return
+        self.dht_alive_torrents += 1
+
+        if abs(math.log(seeders, 2) - math.log(actual_seeders, 2)) <= 1 \
+                or abs(math.log(leechers, 2) - math.log(actual_leechers, 2)) <= 1:
+            self.dht_fresh_torrents += 1
