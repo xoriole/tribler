@@ -63,7 +63,8 @@ class PopularityCommunityObserver(PopularityCommunity):
             diff = time.time() - START_TIME
             RESULTS.append([int(diff), len(self.get_peers()), self.unique_peers, self.message_count,
                             self.num_torrents, self.unique_torrents, self.duplicate_torrents,
-                            self.max_seeders, self.avg_seeders, self.zero_seeders, self.bandwidth_received])
+                            self.max_seeders, self.avg_seeders, self.zero_seeders, self.bandwidth_received,
+                            self.total_dht_checks, self.failed_dht_checks])
 
             if self.get_peers():
                 for peer in self.get_peers():
@@ -96,12 +97,13 @@ class PopularityCommunityObserver(PopularityCommunity):
     def on_stop(self):
         with open('popularity.txt', 'w') as f:
             f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, MESSAGES, TORRENTS_ALL, TORRENTS_UNIQUE, TORRENTS_DUPLICATES,'
-                    ' SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO, BANDWIDTH')
+                    ' SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO, BANDWIDTH, DHT_TOTAL, DHT_FAILED')
             for (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate,
-                 seeders_max, seeders_avg, seeders_zero, bandwidth) in RESULTS:
-                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f'
+                 seeders_max, seeders_avg, seeders_zero, bandwidth, dht_total, dht_failed) in RESULTS:
+                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f, %d, %d'
                         % (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique,
-                           torrents_duplicate, seeders_max, seeders_avg, seeders_zero, bandwidth))
+                           torrents_duplicate, seeders_max, seeders_avg, seeders_zero, bandwidth,
+                           dht_total, dht_failed))
 
     @lazy_wrapper_wd(TorrentsHealthPayload)
     async def on_torrents_health(self, _, payload, data):
