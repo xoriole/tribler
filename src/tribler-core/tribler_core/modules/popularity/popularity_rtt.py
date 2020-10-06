@@ -57,6 +57,7 @@ class PopularityCommunityObserver(PopularityCommunity):
         self.dht_dead_torrents = 0
         self.dht_alive_torrents = 0
         self.dht_fresh_torrents = 0
+        self.dht_health_diff = 0
 
 
         self.on_start()
@@ -70,7 +71,8 @@ class PopularityCommunityObserver(PopularityCommunity):
                             self.num_torrents, self.unique_torrents, self.duplicate_torrents,
                             self.max_seeders, self.avg_seeders, self.zero_seeders, self.bandwidth_received,
                             self.total_dht_checks, self.failed_dht_checks, self.success_dht_checks,
-                            self.dht_dead_torrents, self.dht_alive_torrents, self.dht_fresh_torrents])
+                            self.dht_dead_torrents, self.dht_alive_torrents, self.dht_fresh_torrents,
+                            self.dht_health_diff])
 
             if self.get_peers():
                 for peer in self.get_peers():
@@ -100,7 +102,8 @@ class PopularityCommunityObserver(PopularityCommunity):
                       f"dht (success): {self.success_dht_checks}, "
                       f"dht (dead): {self.dht_dead_torrents}, "
                       f"dht (alive): {self.dht_alive_torrents}, "
-                      f"dht (fresh): {self.dht_fresh_torrents}")
+                      f"dht (fresh): {self.dht_fresh_torrents}, "
+                      f"dht (fresh): {self.dht_health_diff}")
 
         self.register_task("check_peers", check_peers, interval=5, delay=0)
 
@@ -108,14 +111,14 @@ class PopularityCommunityObserver(PopularityCommunity):
         with open('popularity.txt', 'w') as f:
             f.write('TIME, PEERS_CONNECTED, PEERS_UNIQUE, MESSAGES, TORRENTS_ALL, TORRENTS_UNIQUE, TORRENTS_DUPLICATES,'
                     ' SEEDEERS_MAX, SEEDERS_AVG, SEEDERS_ZERO, BANDWIDTH, DHT_TOTAL, DHT_FAILED, DHT_SUCCESS,'
-                    ' DHT_DEAD, DHT_ALIVE, DHT_FRESH')
+                    ' DHT_DEAD, DHT_ALIVE, DHT_FRESH, DHT_DIFF')
             for (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique, torrents_duplicate,
                  seeders_max, seeders_avg, seeders_zero, bandwidth, dht_total, dht_failed, dht_success,
-                 dht_dead, dht_alive, dht_fresh) in RESULTS:
-                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f, %d, %d, %d, %d, %d, %d'
+                 dht_dead, dht_alive, dht_fresh, dht_diff) in RESULTS:
+                f.write('\n%.2f, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %.2f, %d, %d, %d, %d, %d, %d, %d'
                         % (diff, peers_connected, peers_unique, message, torrents_all, torrents_unique,
                            torrents_duplicate, seeders_max, seeders_avg, seeders_zero, bandwidth,
-                           dht_total, dht_failed, dht_success, dht_dead, dht_alive, dht_fresh))
+                           dht_total, dht_failed, dht_success, dht_dead, dht_alive, dht_fresh, dht_diff))
 
     @lazy_wrapper_wd(TorrentsHealthPayload)
     async def on_torrents_health(self, _, payload, data):
@@ -175,6 +178,7 @@ class PopularityCommunityObserver(PopularityCommunity):
             return
         self.dht_alive_torrents += 1
 
-        if abs(math.log(seeders, 2) - math.log(actual_seeders, 2)) <= 1 \
-                or abs(math.log(leechers, 2) - math.log(actual_leechers, 2)) <= 1:
+        if seeders - actual_seeders <= HEALTH_CHECK_THRESHOLD:
             self.dht_fresh_torrents += 1
+
+        self.dht_health_diff += seeders - actual_seeders
