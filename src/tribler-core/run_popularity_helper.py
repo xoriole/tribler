@@ -94,6 +94,7 @@ class TriblerService(object):
         config.set_popularity_community_enabled(False)
         config.set_chant_enabled(True)
         config.set_bootstrap_enabled(False)
+        config.set_default_number_hops(0)
 
         self.session = Session(config)
         try:
