@@ -1,0 +1,68 @@
+version: "3.7"
+networks:
+  tracker_network:
+
+volumes:
+  state_directory:
+
+services:
+  tracker:
+    image: triblercore/ipv8:tracker
+    command: "--listen_port=6527"
+    networks:
+      - tracker_network
+
+  node:
+    image: triblercore/experiment:popularity
+    command: ["python3", "experiment/popularity_community/network_experiment.py", "-t 120"]
+    environment:
+      - TRACKERS="tracker:6527"
+    networks:
+      - tracker_network
+    volumes:
+      - state_directory:/home/tribler
+    deploy:
+      replicas: 20
+      restart_policy:
+        condition: none
+        max_attempts: 0
+
+#  node2:
+#    image: triblercore/experiment:popularity
+#    command: [ "python3", "experiment/popularity_community/initial_filling.py", "-t 120"]
+#    environment:
+#      - TRACKERS="tracker:6527"
+#    networks:
+#      - tracker_network
+#    volumes:
+#      - /home/jupiter/tudelft/experiment:/home/tribler
+#
+#  node3:
+#    image: triblercore/experiment:popularity
+#    command: [ "python3", "experiment/popularity_community/network_experiment.py", "-t 120"]
+#    environment:
+#      - TRACKERS="tracker:6527"
+#    networks:
+#      - tracker_network
+#    volumes:
+#      - /home/jupiter/tudelft/experiment:/home/tribler
+#
+#  node4:
+#    image: triblercore/experiment:popularity
+#    command: [ "python3", "experiment/popularity_community/network_experiment.py", "-t 120"]
+#    environment:
+#      - TRACKERS="tracker:6527"
+#    networks:
+#      - tracker_network
+#    volumes:
+#      - /home/jupiter/tudelft/experiment:/home/tribler
+#
+#  node5:
+#    image: triblercore/experiment:popularity
+#    command: [ "python3", "experiment/popularity_community/network_experiment.py", "-t 120"]
+#    environment:
+#      - TRACKERS="tracker:6527"
+#    networks:
+#      - tracker_network
+#    volumes:
+#      - /home/jupiter/tudelft/experiment:/home/tribler

@@ -1,0 +1,13 @@
+version: "3.7"
+networks:
+  tracker_network:
+    external: true
+
+services:
+  tracker:
+    image: triblercore/ipv8:tracker
+    command: "--listen_port=6527"
+    networks:
+      - tracker_network
+    ports:
+      - "6527:6527"

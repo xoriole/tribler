@@ -13,20 +13,32 @@ FROM triblercore/libtorrent:1.2.10-x
 RUN apt update && apt upgrade -y
 RUN apt install -y libsodium23 python3-pip git
 
-# Clone the Tribler repo and install pip packages
-RUN mkdir /tribler
-COPY ./src /tribler/src
-COPY ./experiment /tribler/experiment
-# Install any experimental requirements
-RUN pip3 install -r /tribler/experiment/requirements.txt
-# Intall Tribler requirements
-RUN pip3 install -r /tribler/src/requirements.txt && pip3 install -r /tribler/src/pyipv8/requirements.txt
+# Add a non-previleged user
+USER root
+RUN groupadd -r tribler -g 901 && \
+    useradd -u 901 -r -g tribler -m -d /home/tribler -s /sbin/nologin -c "tribler user" tribler && \
+    chmod 755 /opt
+
+WORKDIR /opt
+
+# Install pip dependencies first
+COPY ./src/requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+
+# Copy the source
+COPY ./src ./src
+
+# Copy experiments and install pip dependencies
+COPY ./experiment ./experiment
+RUN pip3 install -r ./experiment/requirements.txt
 
 # Expose ports
-EXPOSE 7759
-EXPOSE 8085
+EXPOSE 7759 8085
 
-ENV PYTHONPATH="/tribler/src/pyipv8:/tribler/src/tribler-common:/tribler/src/tribler-core:/tribler"
+ENV PYTHONPATH="src/pyipv8:src/tribler-common:src/tribler-core:."
+
+RUN chown -R tribler:tribler /opt/
+USER tribler
 
 # Define the command to run
-CMD ["/usr/bin/python3", "/tribler/experiment/popularity_community/torrent_health.py"]
+CMD ["/usr/bin/python3", "src/experiment/popularity_community/network_experiment.py"]

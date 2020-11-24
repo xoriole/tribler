@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import signal
+from asyncio import ensure_future
 from pathlib import Path
 
 from tribler_core.config.tribler_config import TriblerConfig
@@ -25,16 +26,30 @@ class TinyTriblerService:
         self.config = config
         self.timeout_in_sec = timeout_in_sec
 
+    async def before_tribler_starts(self):
+        """Function will call before the Tribler session is started
+
+        It is good place to add a custom code.
+        """
+
     async def on_tribler_started(self):
         """Function will calls after the Tribler session is started
 
         It is good place to add a custom code.
         """
 
+    def on_tribler_shutdown(self):
+        """Function will call after the Tribler session is shutdown.
+
+        It is a good place to add a custom code.
+        """
+        print(f"Calling tribler shutdown callback")
+
     async def start_tribler(self):
         self.logger.info(f'Starting tribler instance in directory: {self.working_dir}')
 
         self._check_already_running()
+        await self.before_tribler_starts()
         await self._start_session()
 
         if self.timeout_in_sec:
@@ -91,7 +106,9 @@ class TinyTriblerService:
         def exit_async_loop(_):
             for pending_task in asyncio.Task.all_tasks():
                 pending_task.cancel()
+            print(f"graceful shutdown completed")
             asyncio.get_event_loop().stop()
+            self.on_tribler_shutdown()
 
         if not self.session.shutdownstarttime:
             task = asyncio.create_task(self.session.shutdown())
