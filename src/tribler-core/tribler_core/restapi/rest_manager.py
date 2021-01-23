@@ -14,6 +14,8 @@ from tribler_core.version import version_id
 
 logger = logging.getLogger(__name__)
 
+API_HOST = os.environ.get("TRIBLER_API_HOST", "localhost")
+
 
 @web.middleware
 class ApiKeyMiddleware:
@@ -104,13 +106,13 @@ class RESTManager():
         if config.get_api_http_enabled():
             api_port = config.get_api_http_port()
             if not self.session.config.get_api_retry_port():
-                self.site = web.TCPSite(self.runner, 'localhost', api_port)
+                self.site = web.TCPSite(self.runner, API_HOST, api_port)
                 await self.site.start()
             else:
                 bind_attempts = 0
                 while bind_attempts < 10:
                     try:
-                        self.site = web.TCPSite(self.runner, 'localhost', api_port + bind_attempts)
+                        self.site = web.TCPSite(self.runner, API_HOST, api_port + bind_attempts)
                         await self.site.start()
                         self.session.config.set_api_http_port(api_port + bind_attempts)
                         break
