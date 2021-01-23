@@ -114,11 +114,17 @@ class TunnelHelperService(TaskManager):
             base_port = int(os.environ["HELPER_BASE"])
             ipv8_port = base_port + int(os.environ["HELPER_INDEX"]) * 5
 
+        random_slots = options.random_slots
+        competing_slots = options.competing_slots
+        if "HELPER_NUM_RANDOM_SLOTS" in os.environ and "HELPER_NUM_COMPETING_SLOTS" in os.environ:
+            random_slots = int(os.environ["HELPER_NUM_RANDOM_SLOTS"])
+            competing_slots = int(os.environ["HELPER_NUM_COMPETING_SLOTS"])
+
         statedir = Path(os.path.join(get_root_state_directory(), "tunnel-%d") % ipv8_port)
         config = TriblerConfig(statedir, config_file=statedir / 'triblerd.conf')
         config.set_tunnel_community_socks5_listen_ports([])
-        config.set_tunnel_community_random_slots(options.random_slots)
-        config.set_tunnel_community_competing_slots(options.competing_slots)
+        config.set_tunnel_community_random_slots(random_slots)
+        config.set_tunnel_community_competing_slots(competing_slots)
         config.set_torrent_checking_enabled(False)
         config.set_ipv8_enabled(True)
         config.set_libtorrent_enabled(False)
