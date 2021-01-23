@@ -2,6 +2,7 @@ import logging
 import os
 import ssl
 
+import netifaces
 from aiohttp import web
 
 from aiohttp_apispec import AiohttpApiSpec
@@ -14,7 +15,14 @@ from tribler_core.version import version_id
 
 logger = logging.getLogger(__name__)
 
-API_HOST = os.environ.get("TRIBLER_API_HOST", "localhost")
+
+def get_api_host():
+    nic = os.environ.get('TRIBLER_NIC', 'lo')
+    try:
+        nic_host = netifaces.ifaddresses(nic)[2][0]['addr']
+    except:
+        nic_host = "127.0.0.1"
+    return nic_host
 
 
 @web.middleware
@@ -105,14 +113,15 @@ class RESTManager():
 
         if config.get_api_http_enabled():
             api_port = config.get_api_http_port()
+            api_host = get_api_host()
             if not self.session.config.get_api_retry_port():
-                self.site = web.TCPSite(self.runner, API_HOST, api_port)
+                self.site = web.TCPSite(self.runner, api_host, api_port)
                 await self.site.start()
             else:
                 bind_attempts = 0
                 while bind_attempts < 10:
                     try:
-                        self.site = web.TCPSite(self.runner, API_HOST, api_port + bind_attempts)
+                        self.site = web.TCPSite(self.runner, api_host, api_port + bind_attempts)
                         await self.site.start()
                         self.session.config.set_api_http_port(api_port + bind_attempts)
                         break
