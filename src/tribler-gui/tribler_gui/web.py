@@ -6,6 +6,8 @@ from PyQt5.QtCore import QObject, pyqtSlot, QUrl, QVariant
 
 import os
 
+from tribler_gui.utilities import get_html_path
+
 
 class CallHandler(QObject):
 
@@ -32,7 +34,7 @@ class WebView(QWebEngineView):
         self.channel.registerObject('handler', self.handler)
         self.page().setWebChannel(self.channel)
 
-        file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "html", "index.html"))
+        file_path = get_html_path("index.html")
         local_url = QUrl.fromLocalFile(file_path)
 
         self.load(local_url)

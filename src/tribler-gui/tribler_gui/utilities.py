@@ -208,6 +208,10 @@ def get_image_path(filename):
     return os.path.join(get_base_path(), 'images', filename)
 
 
+def get_html_path(filename):
+    return os.path.join(get_base_path(), 'html', filename)
+
+
 def get_gui_setting(gui_settings, value, default, is_bool=False):
     """
     Utility method to get a specific GUI setting. The is_bool flag defines whether we expect a boolean so we convert it
