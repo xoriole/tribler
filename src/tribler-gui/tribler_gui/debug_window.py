@@ -24,6 +24,7 @@ from tribler_gui.event_request_manager import received_events as tribler_receive
 from tribler_gui.resource_monitor import GuiResourceMonitor
 from tribler_gui.tribler_request_manager import TriblerNetworkRequest, performed_requests as tribler_performed_requests
 from tribler_gui.utilities import connect, format_size, get_ui_file_path
+from tribler_gui.web import WebView
 from tribler_gui.widgets.graphs.timeseriesplot import TimeSeriesPlot
 from tribler_gui.widgets.ipv8health import MonitorWidget
 
@@ -133,6 +134,9 @@ class DebugWindow(QMainWindow):
         self.resource_monitor = GuiResourceMonitor()
         self.resource_monitor.start()
 
+        # Webview
+        self.webview_loaded = False
+
     def hideEvent(self, hide_event):
         self.stop_timer()
         self.hide_ipv8_health_widget()
@@ -238,6 +242,8 @@ class DebugWindow(QMainWindow):
             self.load_memory_tab()
         elif index == 5:
             self.load_profiler_tab()
+        elif index == 6:
+            self.load_webview_tab()
 
     def create_and_add_widget_item(self, key, value, widget):
         item = QTreeWidgetItem(widget)
@@ -710,6 +716,13 @@ class DebugWindow(QMainWindow):
         self.memory_plot_timer = QTimer()
         connect(self.memory_plot_timer.timeout, self.load_memory_tab)
         self.memory_plot_timer.start(5000)
+
+    def load_webview_tab(self):
+        if not self.webview_loaded:
+            vlayout = self.window().webview_layout.layout()
+            webview = WebView()
+            vlayout.addWidget(webview)
+            self.webview_loaded = True
 
     def load_profiler_tab(self):
         self.window().toggle_profiler_button.setEnabled(False)

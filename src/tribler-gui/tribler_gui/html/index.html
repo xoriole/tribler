@@ -1,0 +1,27 @@
+<html>
+<head>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <style>
+      ::selection {
+        background:transparent;
+      }
+    </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Yay! Web is working in Tribler</h1>
+  </div>
+  <script language="JavaScript">
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+          window.handler = channel.objects.handler;
+          handler.test(function(retVal) {
+            // console.error as console.log message don't show up in the python console
+            console.error(JSON.stringify(retVal));
+          })
+
+        });
+      </script>
+
+</body>
+</html>
