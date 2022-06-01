@@ -3,4 +3,3 @@ venv**
 .github
 .pytest**
 doc
-scripts
