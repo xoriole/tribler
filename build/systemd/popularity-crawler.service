@@ -1,0 +1,15 @@
+[Unit]
+Description="Popular torrents crawler"
+After=network-online.target
+
+[Service]
+Type=simple
+User=popularitycrawler
+Group=popularitycrawler
+Restart=always
+Environment=PYTHONPATH=./src
+WorkingDirectory=/opt/experiment/popularity-community/tribler
+ExecStart=/usr/bin/python3 scripts/experiments/popularity_community/torrent_logger.py --statedir /var/lib/popularitycrawler
+
+[Install]
+WantedBy=multi-user.target
