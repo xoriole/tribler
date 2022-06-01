@@ -1,2 +1,3 @@
 sentry-sdk
 python-dotenv
+psycopg2-binary
