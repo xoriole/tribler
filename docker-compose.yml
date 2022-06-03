@@ -2,12 +2,13 @@ version: "3.3"
 
 services:
   tribler-core:
-    image: triblercore/triblercore:latest
-    container_name: triblercore
+    image: triblercore/experiment:popularity
+    container_name: popularity-community
+    command:
+      - "./scripts/experiments/popularity_community/docker-entrypoint.sh"
     network_mode: "host"
     build: .
     volumes:
-      - ~/.Tribler:/home/user/.Tribler
+      - ./.env:/home/user/tribler/scripts/experiments/popularity_community/.env
     environment:
       CORE_API_PORT: 52194
-
