@@ -140,7 +140,17 @@ class CustomPopularityCommunity(PopularityCommunity):
         refresh_interval = 86400  # 1 day
 
         existing_peer = self.PeerEntity.select(lambda p: p.pk == peer.public_key.key_to_bin()).first()
-        if not existing_peer or not existing_peer.version or time_now - existing_peer.last_known > refresh_interval:
+        if not existing_peer:
+            # Create an entry for the peer with null version and platform
+            self.PeerEntity(pk=peer.public_key.key_to_bin(),
+                            ip=peer.address.ip,
+                            port=peer.address.port,
+                            version='N/A',
+                            platform='N/A',
+                            first_known=time_now,
+                            last_known=time_now)
+            return False
+        elif existing_peer.version == 'N/A' or time_now - existing_peer.last_known > refresh_interval:
             return False
         return True
 
