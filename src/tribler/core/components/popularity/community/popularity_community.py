@@ -7,6 +7,7 @@ from ipv8.lazy_community import lazy_wrapper
 from pony.orm import db_session
 
 from tribler.core.components.metadata_store.remote_query_community.remote_query_community import RemoteQueryCommunity
+from tribler.core.components.popularity.community.filter import PerPeerFilter, PerPeerTorrentFilter
 from tribler.core.components.popularity.community.payload import TorrentsHealthPayload
 from tribler.core.components.popularity.community.version_community_mixin import VersionCommunityMixin
 from tribler.core.utilities.unicode import hexlify
@@ -32,6 +33,7 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
     def __init__(self, *args, torrent_checker=None, **kwargs):
         # Creating a separate instance of Network for this community to find more peers
         super().__init__(*args, **kwargs)
+
         self.torrent_checker = torrent_checker
 
         self.add_message_handler(TorrentsHealthPayload, self.on_torrents_health)
@@ -45,6 +47,10 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
 
         # Init version community message handlers
         self.init_version_community()
+
+        # Init filters
+        self.per_peer_torrent_filter = PerPeerTorrentFilter()
+        self.register_task("prune_peer_filter", self.prune_disconnected_peers_from_filter, interval=5)
 
     @staticmethod
     def select_torrents_to_gossip(torrents, include_popular=True, include_random=True) -> (set, set):
@@ -93,7 +99,11 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
         if not checked:
             return
 
-        popular, rand = PopularityCommunity.select_torrents_to_gossip(checked,
+        # Select a random peer and filter torrents already sent to the peer
+        random_peer = random.choice(self.get_peers())
+        checked_and_unsent = self.filter_torrents_already_sent_to_peer(random_peer, checked)
+
+        popular, rand = PopularityCommunity.select_torrents_to_gossip(checked_and_unsent,
                                                                       include_popular=include_popular,
                                                                       include_random=include_random)
         if not popular and not rand:
@@ -101,13 +111,12 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
                              f'{len(checked)}')
             return
 
-        random_peer = random.choice(self.get_peers())
-
-        self.logger.debug(
+        self.logger.info(
             f'Gossip torrent health information for {len(rand)}'
             f' random torrents and {len(popular)} popular torrents')
 
         self.ez_send(random_peer, TorrentsHealthPayload.create(rand, popular))
+        self.update_filter_with_torrents_sent_to_peer(random_peer, list(rand | popular))
 
     def gossip_random_torrents_health(self):
         """
@@ -141,3 +150,12 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
             if added:
                 infohashes_to_resolve.add(infohash)
         return infohashes_to_resolve
+
+    def filter_torrents_already_sent_to_peer(self, peer, checked_torrents):
+        return self.per_peer_torrent_filter.filter(peer, checked_torrents)
+
+    def update_filter_with_torrents_sent_to_peer(self, peer, sent_torrents):
+        self.per_peer_torrent_filter.add(peer, sent_torrents)
+
+    def prune_disconnected_peers_from_filter(self):
+        self.per_peer_torrent_filter.prune(self.get_peers())
