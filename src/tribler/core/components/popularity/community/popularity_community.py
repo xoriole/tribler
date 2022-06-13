@@ -2,8 +2,6 @@ import heapq
 import random
 from binascii import unhexlify
 
-from cuckoo.filter import ScalableCuckooFilter
-
 from ipv8.lazy_community import lazy_wrapper
 
 from pony.orm import db_session
@@ -30,10 +28,6 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
     GOSSIP_POPULAR_TORRENT_COUNT = 10
     GOSSIP_RANDOM_TORRENT_COUNT = 10
 
-    # Filter parameters
-    # FILTER_CAPACITY = 1000
-    # FILTER_ERROR_RATE = 0.1
-
     community_id = unhexlify('9aca62f878969c437da9844cba29a134917e1648')
 
     def __init__(self, *args, torrent_checker=None, **kwargs):
@@ -56,13 +50,7 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
 
         # Init filters
         self.per_peer_torrent_filter = PerPeerTorrentFilter()
-        self.register_task("update_peer_filter", self.prune_filter, interval=5)
-
-    def init_filters(self):
-        pass
-
-    # def update_filter(self):
-    #     pass
+        self.register_task("prune_peer_filter", self.prune_disconnected_peers_from_filter, interval=5)
 
     @staticmethod
     def select_torrents_to_gossip(torrents, include_popular=True, include_random=True) -> (set, set):
@@ -84,8 +72,6 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
                  if seeders > 0}
         if not alive:
             return {}, {}
-
-        print(f"alive torrents: {len(alive)}")
 
         popular, rand = set(), set()
 
@@ -113,10 +99,11 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
         if not checked:
             return
 
+        # Select a random peer and filter torrents already sent to the peer
         random_peer = random.choice(self.get_peers())
-        filtered_checked = self.filter_torrents_for_peer(random_peer, checked)
+        checked_and_unsent = self.filter_torrents_already_sent_to_peer(random_peer, checked)
 
-        popular, rand = PopularityCommunity.select_torrents_to_gossip(filtered_checked,
+        popular, rand = PopularityCommunity.select_torrents_to_gossip(checked_and_unsent,
                                                                       include_popular=include_popular,
                                                                       include_random=include_random)
         if not popular and not rand:
@@ -129,23 +116,7 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
             f' random torrents and {len(popular)} popular torrents')
 
         self.ez_send(random_peer, TorrentsHealthPayload.create(rand, popular))
-        self.update_filter(random_peer, rand, popular)
-
-    def filter_torrents_for_peer(self, peer, torrents):
-        print(f"--- filter torrents per peer[{peer.address.ip}:{peer.address.port}] ----")
-        print(f" total torrents checked: {len(torrents)}")
-
-        filtered_torrents = self.per_peer_torrent_filter.filter(peer, torrents)
-        print(f" filtered torrents: {len(filtered_torrents)}")
-        return set(filtered_torrents)
-
-    def update_filter(self, peer, random_torrents, popular_torrents):
-        torrents = list(random_torrents | popular_torrents)
-        self.per_peer_torrent_filter.add(peer, torrents)
-
-    def prune_filter(self):
-        print("pruning peer filters")
-        self.per_peer_torrent_filter.prune(self.get_peers())
+        self.update_filter_with_torrents_sent_to_peer(random_peer, list(rand | popular))
 
     def gossip_random_torrents_health(self):
         """
@@ -179,3 +150,12 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
             if added:
                 infohashes_to_resolve.add(infohash)
         return infohashes_to_resolve
+
+    def filter_torrents_already_sent_to_peer(self, peer, checked_torrents):
+        return set(self.per_peer_torrent_filter.filter(peer, checked_torrents))
+
+    def update_filter_with_torrents_sent_to_peer(self, peer, sent_torrents):
+        self.per_peer_torrent_filter.add(peer, sent_torrents)
+
+    def prune_disconnected_peers_from_filter(self):
+        self.per_peer_torrent_filter.prune(self.get_peers())
