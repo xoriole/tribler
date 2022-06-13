@@ -9,13 +9,13 @@ from ipv8.lazy_community import lazy_wrapper
 from pony.orm import db_session
 
 from tribler.core.components.metadata_store.remote_query_community.remote_query_community import RemoteQueryCommunity
-from tribler.core.components.popularity.community.filter_community_mixin import FilterCommunityMixin
+from tribler.core.components.popularity.community.filter import PerPeerFilter, PerPeerTorrentFilter
 from tribler.core.components.popularity.community.payload import TorrentsHealthPayload
 from tribler.core.components.popularity.community.version_community_mixin import VersionCommunityMixin
 from tribler.core.utilities.unicode import hexlify
 
 
-class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin, FilterCommunityMixin):
+class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
     """
     Community for disseminating the content across the network.
 
@@ -39,7 +39,6 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin, FilterCom
     def __init__(self, *args, torrent_checker=None, **kwargs):
         # Creating a separate instance of Network for this community to find more peers
         super().__init__(*args, **kwargs)
-        FilterCommunityMixin.__init__(self)
 
         self.torrent_checker = torrent_checker
 
@@ -51,13 +50,13 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin, FilterCom
                            interval=PopularityCommunity.GOSSIP_INTERVAL_FOR_POPULAR_TORRENTS)
         self.register_task("gossip_random_torrents", self.gossip_random_torrents_health,
                            interval=PopularityCommunity.GOSSIP_INTERVAL_FOR_RANDOM_TORRENTS)
-        # self.register_task("update_filter", self.update_filter, interval=5)
 
         # Init version community message handlers
         self.init_version_community()
 
-        # # Init filters
-        # self.peer_torrents_filters = {}
+        # Init filters
+        self.per_peer_torrent_filter = PerPeerTorrentFilter()
+        self.register_task("update_peer_filter", self.prune_filter, interval=5)
 
     def init_filters(self):
         pass
@@ -117,7 +116,7 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin, FilterCom
         random_peer = random.choice(self.get_peers())
         filtered_checked = self.filter_torrents_for_peer(random_peer, checked)
 
-        popular, rand = PopularityCommunity.select_torrents_to_gossip(checked,
+        popular, rand = PopularityCommunity.select_torrents_to_gossip(filtered_checked,
                                                                       include_popular=include_popular,
                                                                       include_random=include_random)
         if not popular and not rand:
@@ -135,28 +134,18 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin, FilterCom
     def filter_torrents_for_peer(self, peer, torrents):
         print(f"--- filter torrents per peer[{peer.address.ip}:{peer.address.port}] ----")
         print(f" total torrents checked: {len(torrents)}")
-        filter = self.get_filter(peer)
-        output = []
-        count = 0
-        for torrent in torrents:
-            infohash, seeders, leechers, last_check = torrent
-            count += 1
-            if seeders < 1:
-                continue
-            if seeders > 0 and not filter.contains(infohash):
-                output.append(torrent)
-            else:
-                print(f"[{count}] torrent already exists or dead: {hexlify(infohash)}")
-        print(f" filtered torrents: {len(output)}")
-        return set(output)
+
+        filtered_torrents = self.per_peer_torrent_filter.filter(peer, torrents)
+        print(f" filtered torrents: {len(filtered_torrents)}")
+        return set(filtered_torrents)
 
     def update_filter(self, peer, random_torrents, popular_torrents):
-        peer_mid = str(peer.mid)
-        infohashes = [infohash for infohash, seeders, leechers, last_check in random_torrents | popular_torrents]
-        self.add_to_filter(peer, infohashes)
+        torrents = list(random_torrents | popular_torrents)
+        self.per_peer_torrent_filter.add(peer, torrents)
 
     def prune_filter(self):
-        pass
+        print("pruning peer filters")
+        self.per_peer_torrent_filter.prune(self.get_peers())
 
     def gossip_random_torrents_health(self):
         """
