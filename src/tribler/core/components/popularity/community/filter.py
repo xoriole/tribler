@@ -1,8 +1,8 @@
-# Filter parameters
 from typing import Any
 
 from cuckoo.filter import ScalableCuckooFilter
 
+# Filter parameters
 FILTER_CAPACITY = 1000
 FILTER_ERROR_RATE = 0.00001
 FILTER_BUCKET_SIZE = 6
@@ -12,16 +12,15 @@ class PerPeerFilter:
 
     def __init__(self):
         self.filters = {}
-        self.filter_fn = lambda x: False
-
-    def get_filter_key(self, data_item):
-        return data_item
 
     def _new_filter(self):
         return ScalableCuckooFilter(initial_capacity=FILTER_CAPACITY, error_rate=FILTER_ERROR_RATE,
                                     bucket_size=FILTER_BUCKET_SIZE)
 
     def add(self, peer, items: Any):
+        """
+        Adds a list of items to the cuckoo filter of the peer.
+        """
         peer_mid = str(peer.mid)
         filter = self.filters.get(peer_mid, self._new_filter())
 
@@ -34,42 +33,32 @@ class PerPeerFilter:
         self.filters[peer_mid] = filter
 
     def exists(self, peer, key):
+        """
+        Checks if the key exists in the filter associated with the peer.
+        """
         filter = self.filters.get(str(peer.mid), None)
         return filter and filter.contains(key)
 
-    def get_filter_instance(self, peer, create=False):
-        peer_mid = str(peer.mid)
-        default = None if not create else self._new_filter()
-        filter = self.filters.get(str(peer.mid), default)
-        return filter
-
     def get_item_key(self, item: Any):
+        """
+        Returns the key derived from the item that will be used in the cuckoo filter.
+        """
         return item
 
-    def is_filtered(self, filter, item: Any):
-        item_key = self.get_item_key(item)
-        if not filter.contains(item_key):
-            return item
-        return None
-
-    def filter(self, peer, items: list, filter_fn=None):
-        filter = self.get_filter_instance(peer)
+    def filter(self, peer, items: list):
+        """
+        Returns items that are not present in the filter.
+        """
+        filter = self.filters.get(str(peer.mid), None)
         if not filter:
             return items
 
-        if not filter_fn:
-            filter_fn = lambda item: self.filter_fn(item)
-
-        filtered_items = []
-        for item in items:
-            item_key = self.get_item_key(item)
-            if filter.contains(item_key) or filter_fn(item):
-                continue
-            filtered_items.append(item)
-
-        return filtered_items
+        return [item for item in items if not filter.contains(self.get_item_key(item))]
 
     def prune(self, peers):
+        """
+        Prune filters associated with peers that are not present anymore.
+        """
         peer_mids = [str(peer.mid) for peer in peers]
         for key in list(self.filters):
             if key not in peer_mids:
@@ -81,9 +70,3 @@ class PerPeerTorrentFilter(PerPeerFilter):
     def get_item_key(self, item: Any):
         infohash, seeders, leechers, last_check = item
         return infohash
-
-    def filter_fn(self, item: Any):
-        infohash, seeders, leechers, last_check = item
-        if seeders == 0:
-            return True
-        return False

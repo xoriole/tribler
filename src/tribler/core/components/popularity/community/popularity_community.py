@@ -152,7 +152,7 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
         return infohashes_to_resolve
 
     def filter_torrents_already_sent_to_peer(self, peer, checked_torrents):
-        return set(self.per_peer_torrent_filter.filter(peer, checked_torrents))
+        return self.per_peer_torrent_filter.filter(peer, checked_torrents)
 
     def update_filter_with_torrents_sent_to_peer(self, peer, sent_torrents):
         self.per_peer_torrent_filter.add(peer, sent_torrents)
