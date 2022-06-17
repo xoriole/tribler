@@ -1,4 +1,6 @@
 import logging
+import os
+import random
 import time
 from random import randint
 from types import SimpleNamespace
@@ -8,13 +10,16 @@ from ipv8.keyvault.crypto import default_eccrypto
 from ipv8.test.base import TestBase
 from ipv8.test.mocking.ipv8 import MockIPv8
 
-from pony.orm import db_session
+from pony.orm import db_session, count
 
 import pytest
 
 from tribler.core.components.metadata_store.db.store import MetadataStore
 from tribler.core.components.metadata_store.remote_query_community.settings import RemoteQueryCommunitySettings
+from tribler.core.components.popularity.community.filter import PerPeerTorrentFilter
+from tribler.core.components.popularity.community.payload import TorrentsHealthPayload
 from tribler.core.components.popularity.community.popularity_community import PopularityCommunity
+from tribler.core.components.popularity.community.tests.test_filter import get_random_peers
 from tribler.core.tests.tools.base_test import MockObject
 from tribler.core.utilities.path_util import Path
 from tribler.core.utilities.utilities import random_infohash
@@ -86,6 +91,50 @@ class TestPopularityCommunity(TestBase):
             assert torrent.seeders == checked_torrent_info[1]
             assert torrent.leechers == checked_torrent_info[2]
             assert torrent.last_check == checked_torrent_info[3]
+
+    async def test_torrents_health_gossip_with_filter(self):
+        """
+        Test whether new torrent health information is correctly gossiped to the same peer each time and are not
+        repeated.
+        """
+        checked_torrent_info = [(os.urandom(20), random.randint(1, 100), random.randint(0, 100), int(time.time()))
+                                for _ in range(10)]
+
+        node0_db = self.nodes[0].overlay.mds.TorrentState
+        node1_db2 = self.nodes[1].overlay.mds.TorrentState
+
+        with db_session:
+            assert node0_db.select().count() == 0
+            assert node1_db2.select().count() == 0
+
+        # Assuming node 0 has 100 checked torrents
+        checked_torrents = [(os.urandom(20),
+                             random.randint(1, 100),
+                             random.randint(0, 100),
+                             int(time.time())
+                             ) for _ in range(100)]
+        self.nodes[0].overlay.torrent_checker.torrents_checked.update(checked_torrents)
+
+        await self.introduce_nodes()
+
+        print(f"torrent info: {checked_torrent_info}")
+        results = self.nodes[0].overlay.filter_torrents_already_sent_to_peer(self.nodes[1].my_peer, checked_torrent_info)
+        print(f"before sending : {results}")
+
+        self.nodes[0].overlay.gossip_random_torrents_health()
+
+        await self.deliver_messages(timeout=0.1)
+        # await self.init_first_node_and_gossip(checked_torrent_info)
+
+        print(f"torrent info: {checked_torrent_info}")
+        results = self.nodes[0].overlay.filter_torrents_already_sent_to_peer(self.nodes[1].my_peer, checked_torrent_info)
+        print(f"after sending : {results}")
+
+        # Check whether node 1 has new torrent health information
+        with db_session:
+            counts = count(t for t in node1_db2)
+            print(f"count: {counts}")
+
 
     async def test_torrents_health_gossip_multiple(self):
         """
@@ -227,17 +276,25 @@ async def test_no_alive_torrents():
 
 # pylint: disable=super-init-not-called
 async def test_gossip_torrents_health_returns():
+    peers = get_random_peers(1)
+
     class MockPopularityCommunity(PopularityCommunity):
         def __init__(self):
             self.is_ez_send_has_been_called = False
+            self.is_ez_send_has_been_called_with_payload = False
             self.torrent_checker = None
             self.logger = logging.getLogger()
+            self.per_peer_torrent_filter = PerPeerTorrentFilter()
 
         def ez_send(self, peer, *payloads, **kwargs):
             self.is_ez_send_has_been_called = True
+            for payload in payloads:
+                if isinstance(payload, TorrentsHealthPayload):
+                    print(payload)
+            print(payloads)
 
         def get_peers(self):
-            return [None]
+            return peers
 
     community = MockPopularityCommunity()
 
@@ -258,5 +315,8 @@ async def test_gossip_torrents_health_returns():
 
     community.torrent_checker.torrents_checked = {(b'0' * 20, 1, 0, None),
                                                   (b'1' * 20, 1, 0, None)}
+    community.gossip_random_torrents_health()
+    assert community.is_ez_send_has_been_called
+
     community.gossip_random_torrents_health()
     assert community.is_ez_send_has_been_called
