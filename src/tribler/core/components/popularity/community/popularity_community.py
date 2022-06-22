@@ -10,7 +10,7 @@ from tribler.core.components.metadata_store.remote_query_community.remote_query_
 from tribler.core.components.popularity.community.payload import TorrentsHealthPayload, PopularTorrentsRequest
 from tribler.core.components.popularity.community.version_community_mixin import VersionCommunityMixin
 from tribler.core.utilities.unicode import hexlify
-from tribler.core.utilities.utilities import get_random_normal_variate
+from tribler.core.utilities.utilities import get_random_normal_variate, get_random_normal_variate_list
 
 
 class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
@@ -51,7 +51,7 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
         self.ez_send(peer, PopularTorrentsRequest())
 
     def get_alive_checked_torrents(self):
-        if not self.torrent_checker or self.torrent_checker.torrents_checked:
+        if not self.torrent_checker or not self.torrent_checker.torrents_checked:
             return []
 
         # Filter torrents that have seeders
@@ -106,9 +106,9 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
         num_torrents_to_send = min(PopularityCommunity.GOSSIP_RANDOM_TORRENT_COUNT, num_torrents)
 
         sorted_torrents = sorted(checked_and_alive, key=lambda t: -t[1])
-        likely_popular = {sorted_torrents[get_random_normal_variate(num_torrents)]
-                          for i in range(num_torrents_to_send)}
-        return likely_popular
+        likely_popular_indices = get_random_normal_variate_list(size=num_torrents_to_send, limit=num_torrents)
+        likely_popular_torrents = {sorted_torrents[i] for i in likely_popular_indices}
+        return likely_popular_torrents
 
     def get_random_torrents(self):
         checked_and_alive = list(self.get_alive_checked_torrents())
@@ -118,5 +118,5 @@ class PopularityCommunity(RemoteQueryCommunity, VersionCommunityMixin):
         num_torrents = len(checked_and_alive)
         num_torrents_to_send = min(PopularityCommunity.GOSSIP_RANDOM_TORRENT_COUNT, num_torrents)
 
-        random_torrents = set(random.sample(list(checked_and_alive), num_torrents_to_send))
+        random_torrents = set(random.sample(checked_and_alive, num_torrents_to_send))
         return random_torrents
