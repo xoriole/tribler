@@ -1,5 +1,5 @@
 from ipv8.peerdiscovery.network import Network
-from scripts.experiments.popularity_community.custom_popularity_community import CustomPopularityCommunity
+from scripts.experiments.popularity_community.community import CustomPopularityCommunity
 
 from tribler.core.components.base import Component
 from tribler.core.components.gigachannel.community.sync_strategy import RemovePeers
