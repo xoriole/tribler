@@ -1,96 +1,29 @@
-import heapq
-import random
 import time
-from binascii import unhexlify
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pony import orm
-from pydantic import BaseSettings, Field
+from pony.orm import db_session
 
 from ipv8.lazy_community import lazy_wrapper
-
-from pony.orm import db_session, Database
-
-from tribler.core.components.metadata_store.remote_query_community.remote_query_community import RemoteQueryCommunity
+from scripts.experiments.common.database import get_database
+from scripts.experiments.popularity_community.custom_entities import define_torrent_health_binding, define_peer_binding
 from tribler.core.components.popularity.community.payload import TorrentsHealthPayload
 from tribler.core.components.popularity.community.popularity_community import PopularityCommunity
-from tribler.core.components.popularity.community.version_community_mixin import VersionCommunityMixin, VersionRequest
+from tribler.core.components.popularity.community.version_community_mixin import VersionRequest
 from tribler.core.utilities.unicode import hexlify
-
-ENV_FILE = Path(__file__).parent / ".env"
-load_dotenv(ENV_FILE)
-
-
-def define_torrent_health_binding(db):
-    class TorrentHealthEntity(db.Entity):
-        rowid = orm.PrimaryKey(int, auto=True)
-
-        peer_pk = orm.Required(bytes, index=True)
-        peer_ip = orm.Required(str, index=True)
-        peer_port = orm.Required(int, index=True)
-        received_at = orm.Optional(int, size=64, default=0, index=True)
-
-        infohash = orm.Required(str, index=True)
-        seeders = orm.Optional(int, default=0)
-        leechers = orm.Optional(int, default=0)
-        last_check = orm.Optional(int, size=64, default=0, index=True)
-    return TorrentHealthEntity
-
-def define_peer_binding(db):
-    class PeerEntity(db.Entity):
-        rowid = orm.PrimaryKey(int, auto=True)
-        pk = orm.Required(bytes, unique=True, index=True)
-        ip = orm.Required(str, index=True)
-        port = orm.Required(int, index=True)
-
-        version = orm.Optional(str, index=True)
-        platform = orm.Optional(str, index=True)
-
-        first_known = orm.Required(int, size=64, default=0)
-        last_known = orm.Required(int, size=64, default=0)
-    return PeerEntity
-
-
-class DatabaseSettings(BaseSettings):
-    provider: str = 'sqlite'
-    host: str = 'localhost'
-    user: str = 'user'
-    password: str = None
-    database: str = 'popular_torrents'
-    filename: str = 'database.sqlite'
-
-    class Config:
-        env_prefix = 'EXP_DB_'
-
-    def get_connection(self):
-        if self.provider == 'sqlite':
-            return self.dict(include={'provider', 'filename'})
-        else:
-            return self.dict(include={'provider', 'host', 'user', 'password', 'database'})
 
 
 class CustomPopularityCommunity(PopularityCommunity):
     """
     Custom PopularityCommunity created to run experiments.
     """
-    # GOSSIP_INTERVAL_FOR_POPULAR_TORRENTS = 120  # seconds
-    # GOSSIP_INTERVAL_FOR_RANDOM_TORRENTS = 5  # seconds
-    # GOSSIP_POPULAR_TORRENT_COUNT = 10
-    # GOSSIP_RANDOM_TORRENT_COUNT = 10
 
     def __init__(self, *args, **kwargs):
         # Creating a separate instance of Network for this community to find more peers
         super().__init__(*args, **kwargs)
 
-        # Connection info for database database
-        connection = DatabaseSettings().get_connection()
-        self.logger.info(f"DB connection config: {connection}")
-
-        self.db = Database()
-        self.db.bind(**connection)
-
         # define bindings for tables and generate the mappings for the tables
+        self.db = get_database()
         self.TorrentHealthEntity = define_torrent_health_binding(self.db)
         self.PeerEntity = define_peer_binding(self.db)
         self.db.generate_mapping(create_tables=True)
