@@ -23,7 +23,7 @@ from pydantic import BaseSettings, Field
 
 from ipv8.lazy_community import lazy_wrapper
 from ipv8.taskmanager import TaskManager
-from scripts.experiments.popularity_community.custom_popularity_component import CustomPopularityComponent
+from scripts.experiments.popularity_community.component import CustomPopularityComponent
 from tribler.core.components.gigachannel.gigachannel_component import GigaChannelComponent
 from tribler.core.components.gigachannel_manager.gigachannel_manager_component import GigachannelManagerComponent
 from tribler.core.components.ipv8.ipv8_component import Ipv8Component

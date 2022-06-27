@@ -6,7 +6,7 @@ from pony.orm import db_session
 
 from ipv8.lazy_community import lazy_wrapper
 from scripts.experiments.common.database import get_database
-from scripts.experiments.popularity_community.custom_entities import define_torrent_health_binding, define_peer_binding
+from scripts.experiments.popularity_community.entities import define_torrent_health_binding, define_peer_binding
 from tribler.core.components.popularity.community.payload import TorrentsHealthPayload
 from tribler.core.components.popularity.community.popularity_community import PopularityCommunity
 from tribler.core.components.popularity.community.version_community_mixin import VersionRequest
