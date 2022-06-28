@@ -2,14 +2,14 @@ version: "3.3"
 
 services:
   tribler-core:
-    image: triblercore/experiment:popularity
-    container_name: popularity-community
+    image: triblercore/experiment:gigachannel
+    container_name: gigachannel-community
     command:
-      - "./scripts/experiments/popularity_community/docker-entrypoint.sh"
+      - "./scripts/experiments/gigachannel_community/docker-entrypoint.sh"
     network_mode: "host"
     restart: always
     build: .
     volumes:
-      - ./.env:/home/user/tribler/scripts/experiments/popularity_community/.env
+      - ./.env:/home/user/tribler/scripts/experiments/common/.env
     environment:
       CORE_API_PORT: 52194

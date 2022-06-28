@@ -10,4 +10,4 @@ SCRIPT_DIR="$ROOT_DIR/scripts"
 SRC_DIR="$ROOT_DIR/src"
 
 export PYTHONPATH=$SRC_DIR:$ROOT_DIR
-python3 $SCRIPT_DIR/experiments/popularity_community/torrent_logger.py
+python3 $SCRIPT_DIR/experiments/popularity_community/runner.py
