@@ -23,7 +23,8 @@ class CustomGigaChannelCommunity(GigaChannelCommunity):
 
     @lazy_wrapper(RemoteSelectPayload)
     async def on_remote_select(self, peer, request_payload):
-        self.logger.info(f"{datetime.now().isoformat()}: received remote select payload: {request_payload.json}")
+        self.logger.info(f"{datetime.now().isoformat()}: peer[{peer.address.ip}:{peer.address.port}] sent query: {request_payload.json}")
+        self.logger.info(f"Number of peers: {len(self.get_peers())}")
         query_json = json.loads(request_payload.json)
         if "txt_filter" in query_json:
             received_at = int(time.time())
