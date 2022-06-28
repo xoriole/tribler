@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime
 
 from pony.orm import db_session
 
@@ -22,6 +23,7 @@ class CustomGigaChannelCommunity(GigaChannelCommunity):
 
     @lazy_wrapper(RemoteSelectPayload)
     async def on_remote_select(self, peer, request_payload):
+        self.logger.info(f"{datetime.now().isoformat()}: received remote select payload: {request_payload.json}")
         query_json = json.loads(request_payload.json)
         if "txt_filter" in query_json:
             received_at = int(time.time())
