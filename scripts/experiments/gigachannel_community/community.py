@@ -13,7 +13,6 @@ from tribler.core.components.metadata_store.remote_query_community.remote_query_
 class CustomGigaChannelCommunity(GigaChannelCommunity):
 
     def __init__(self, *args, **kwargs):
-        # Creating a separate instance of Network for this community to find more peers
         super().__init__(*args, **kwargs)
 
         # define bindings for tables and generate the mappings for the tables
@@ -23,12 +22,12 @@ class CustomGigaChannelCommunity(GigaChannelCommunity):
 
     @lazy_wrapper(RemoteSelectPayload)
     async def on_remote_select(self, peer, request_payload):
-        print(f"remote query payload [{self.__class__.__name__}]: {request_payload.json}")
-        received_at = int(time.time())
         query_json = json.loads(request_payload.json)
-        with db_session:
-            self.RemoteSelectQueryEntity(peer_pk=peer.public_key.key_to_bin(),
-                                         peer_ip=peer.address.ip,
-                                         peer_port=peer.address.port,
-                                         received_at=received_at,
-                                         json=query_json)
+        if "txt_filter" in query_json:
+            received_at = int(time.time())
+            with db_session:
+                self.RemoteSelectQueryEntity(peer_pk=peer.public_key.key_to_bin(),
+                                             peer_ip=peer.address.ip,
+                                             peer_port=peer.address.port,
+                                             received_at=received_at,
+                                             json=query_json)
