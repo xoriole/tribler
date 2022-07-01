@@ -32,14 +32,7 @@ USER_CHANNEL_TORRENT_SELECTION_INTERVAL = 15  # The interval for checking the he
 MIN_TORRENT_CHECK_INTERVAL = 900  # How much time we should wait before checking a torrent again
 TORRENT_CHECK_RETRY_INTERVAL = 30  # Interval when the torrent was successfully checked for the last time
 MAX_TORRENTS_CHECKED_PER_SESSION = 50
-
-# Constants for selecting random torrents to check
-TORRENT_SELECTION_POOL_SIZE = 100  # Total pool size selected from the database
-TORRENT_CHECKER_POOL_SIZE = 2  # Number of torrents that will actually be checked from the pool
-
-# Constants for selecting torrents from user channel to check
-USER_CHANNEL_TORRENT_SELECTION_POOL_SIZE = 100  # Total pool size selected from the database
-USER_CHANNEL_TORRENT_CHECKER_POOL_SIZE = 5  # Number of torrents that will actually be checked from the pool
+USER_CHANNEL_TORRENT_SELECTION_POOL_SIZE = 5  # How many torrents to check from user's channel during periodic check
 
 HEALTH_FRESHNESS_SECONDS = 4 * 3600  # Number of seconds before a torrent health is considered stale. Default: 4 hours
 TORRENTS_CHECKED_RETURN_SIZE = 240  # Estimated torrents checked on default 4 hours idle run

@@ -339,14 +339,16 @@ def test_check_local_torrents(torrent_checker):
 
     # Now check that all torrents selected for check are stale torrents.
     selected_torrents = torrent_checker.check_local_torrents()
-    assert len(selected_torrents) <= torrent_checker_module.TORRENT_SELECTION_POOL_SIZE
+    # Max two torrents are checked at a time
+    TORRENT_SELECTION_POOL_SIZE = 2
+    assert len(selected_torrents) <= TORRENT_SELECTION_POOL_SIZE
 
     # In the above setup, both seeder (popularity) count and last_check are decreasing so,
     # 1. Popular torrents are in the front, and
     # 2. Older torrents are towards the back
     # Therefore the selection range becomes:
-    selection_range = stale_infohashes[0: torrent_checker_module.TORRENT_SELECTION_POOL_SIZE] \
-        + stale_infohashes[- torrent_checker_module.TORRENT_SELECTION_POOL_SIZE:]
+    selection_range = stale_infohashes[0: TORRENT_SELECTION_POOL_SIZE] \
+        + stale_infohashes[- TORRENT_SELECTION_POOL_SIZE:]
 
     for infohash in selected_torrents:
         assert infohash in selection_range
