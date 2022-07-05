@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from datetime import datetime
 
@@ -8,7 +9,10 @@ from ipv8.lazy_community import lazy_wrapper
 from scripts.experiments.common.database import get_database
 from scripts.experiments.gigachannel_community.entities import define_remote_select_query_entity_binding
 from tribler.core.components.gigachannel.community.gigachannel_community import GigaChannelCommunity
+from tribler.core.components.ipv8.discovery_booster import DiscoveryBooster
 from tribler.core.components.metadata_store.remote_query_community.remote_query_community import RemoteSelectPayload
+
+BOOSTER_LIFETIME = int(os.environ.get('BOOSTER_LIFETIME', '31536000'))
 
 
 class CustomGigaChannelCommunity(GigaChannelCommunity):
@@ -20,6 +24,8 @@ class CustomGigaChannelCommunity(GigaChannelCommunity):
         self.db = get_database()
         self.RemoteSelectQueryEntity = define_remote_select_query_entity_binding(self.db)
         self.db.generate_mapping(create_tables=True)
+        self.discovery_booster = DiscoveryBooster(timeout_in_sec=BOOSTER_LIFETIME)
+        self.discovery_booster.apply(self)
 
     @lazy_wrapper(RemoteSelectPayload)
     async def on_remote_select(self, peer, request_payload):
