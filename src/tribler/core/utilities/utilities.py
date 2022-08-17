@@ -290,6 +290,10 @@ def get_normally_distributed_number(mean=0, limit=100) -> float:
         return result
 
 
+def get_normally_distributed_positive_integer(mean=0, limit=100) -> int:
+    return abs(int(get_normally_distributed_number(mean=mean, limit=limit)))
+
+
 def get_normally_distributed_positive_integers(size=1, limit=100) -> list:
     """
     Returns a list of non-repeated integer numbers based on normal distribution with mean value zero.
@@ -299,7 +303,7 @@ def get_normally_distributed_positive_integers(size=1, limit=100) -> list:
 
     numbers = []
     while len(numbers) < size:
-        number = abs(int(get_normally_distributed_number(mean=0, limit=limit)))
+        number = get_normally_distributed_positive_integer(mean=0, limit=limit)
         if number not in numbers:
             numbers.append(number)
     return numbers
