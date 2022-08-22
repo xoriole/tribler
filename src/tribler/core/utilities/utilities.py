@@ -298,7 +298,7 @@ def get_normally_distributed_positive_integers(size=1, limit=100) -> list:
     """
     Returns a list of non-repeated integer numbers based on normal distribution with mean value zero.
     """
-    if size >= limit:
+    if size > limit:
         raise Exception("Cannot more numbers than the limit")
 
     numbers = []
