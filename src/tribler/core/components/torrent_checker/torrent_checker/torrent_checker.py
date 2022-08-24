@@ -24,7 +24,7 @@ from tribler.core.config.tribler_config import TriblerConfig
 from tribler.core.utilities.notifier import Notifier
 from tribler.core.utilities.tracker_utils import MalformedTrackerURLException
 from tribler.core.utilities.unicode import hexlify
-from tribler.core.utilities.utilities import has_bep33_support, is_valid_url
+from tribler.core.utilities.utilities import has_bep33_support, is_valid_url, get_normally_distributed_positive_integer
 
 TRACKER_SELECTION_INTERVAL = 20  # The interval for querying a random tracker
 TORRENT_SELECTION_INTERVAL = 120  # The interval for checking the health of a random torrent
@@ -32,9 +32,8 @@ USER_CHANNEL_TORRENT_SELECTION_INTERVAL = 15  # The interval for checking the he
 MIN_TORRENT_CHECK_INTERVAL = 900  # How much time we should wait before checking a torrent again
 TORRENT_CHECK_RETRY_INTERVAL = 30  # Interval when the torrent was successfully checked for the last time
 MAX_TORRENTS_CHECKED_PER_SESSION = 50
-
-TORRENT_SELECTION_POOL_SIZE = 2  # How many torrents to check (popular or random) during periodic check
 USER_CHANNEL_TORRENT_SELECTION_POOL_SIZE = 5  # How many torrents to check from user's channel during periodic check
+
 HEALTH_FRESHNESS_SECONDS = 4 * 3600  # Number of seconds before a torrent health is considered stale. Default: 4 hours
 TORRENTS_CHECKED_RETURN_SIZE = 240  # Estimated torrents checked on default 4 hours idle run
 
@@ -197,27 +196,35 @@ class TorrentChecker(TaskManager):
     @db_session
     def torrents_to_check(self):
         """
-        Two categories of torrents are selected (popular & old). From the pool of selected torrents, a certain
-        number of them are submitted for health check. The torrents that are within the freshness window are
-        excluded from the selection considering the health information is still fresh.
-
-        1. Popular torrents (50%)
-        The indicator for popularity here is considered as the seeder count with direct proportionality
-        assuming more seeders -> more popular. There could be other indicators to be introduced later.
-
-        2. Old torrents (50%)
-        By old torrents, we refer to those checked quite farther in the past, sorted by the last_check value.
+        A single popular and a single old torrent is selected.
+        Selection randomness is based on normal variate distribution so that for popular torrent selection,
+        the probability of selecting a popular torrent is higher and likewise for old torrent selection.
         """
         last_fresh_time = time.time() - HEALTH_FRESHNESS_SECONDS
-        popular_torrents = list(self.mds.TorrentState.select(lambda g: g.last_check < last_fresh_time).
-                                order_by(lambda g: (desc(g.seeders), g.last_check)).limit(TORRENT_SELECTION_POOL_SIZE))
+        total_torrents = self.mds.TorrentState.select().count()
+        random_index = self._select_randomly_likely_popular_torrent_index(total_torrents)
 
-        old_torrents = list(self.mds.TorrentState.select(lambda g: g.last_check < last_fresh_time).
-                            order_by(lambda g: (g.last_check, desc(g.seeders))).limit(TORRENT_SELECTION_POOL_SIZE))
+        random_popular_torrent = self.mds.TorrentState.select(lambda g: g.last_check < last_fresh_time)\
+                                                      .order_by(lambda g: (desc(g.seeders), g.last_check))\
+                                                      .fetch(limit=1, offset=random_index)[:]
 
-        selected_torrents = popular_torrents + old_torrents
-        selected_torrents = random.sample(selected_torrents, min(TORRENT_SELECTION_POOL_SIZE, len(selected_torrents)))
-        return selected_torrents
+        random_old_torrent = self.mds.TorrentState.select(lambda g: g.last_check < last_fresh_time)\
+                                                  .order_by(lambda g: (g.last_check, desc(g.seeders)))\
+                                                  .fetch(limit=1, offset=random_index)[:]
+
+        return random_popular_torrent + random_old_torrent
+
+    def _select_randomly_likely_popular_torrent_index(self, max_index):
+        """
+        Select randomly an index from normal distribution with mean zero.
+
+        This implies that low value index are more likely to be selected.
+        If the indices represent popularity of the torrents, it returns
+        more likely popular torrent index.
+        @param max_index: Max index
+        @return: A positive integer likely with low value
+        """
+        return get_normally_distributed_positive_integer(mean=0, limit=max_index)
 
     @db_session
     def check_local_torrents(self):
