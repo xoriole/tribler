@@ -53,7 +53,7 @@ sentry_sdk.init(
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Log popular torrents on the Tribler network')
-    parser.add_argument('-t', '--tribler_dir', type=str, help='path to data folder', default='/tmp/tribler')
+    parser.add_argument('-t', '--tribler_dir', type=str, help='path to data folder', default='/tmp/tribler3')
     parser.add_argument('-v', '--verbosity', help='increase output verbosity', action='store_true')
 
     return parser.parse_args()
@@ -65,9 +65,9 @@ def setup_logger(verbosity):
 
 
 class Service(TinyTriblerService, TaskManager):
-    def __init__(self, working_dir):
-        super().__init__(TriblerConfig(state_dir=working_dir),
-                         working_dir=working_dir,
+    def __init__(self, config):
+        super().__init__(config,
+                         working_dir=config.state_dir,
                          components=[RESTComponent(), KeyComponent(), SocksServersComponent(),
                                      LibtorrentComponent(), Ipv8Component(), MetadataStoreComponent(),
                                      GigachannelManagerComponent(), GigaChannelComponent(),
@@ -81,12 +81,18 @@ class Service(TinyTriblerService, TaskManager):
         task = asyncio.create_task(self.on_tribler_shutdown())
         task.add_done_callback(lambda result: TinyTriblerService._graceful_shutdown(self))
 
+    # async def on_tribler_started(self):
+        # self.download_manager = LibtorrentComponent.instance().download_manager
+
     async def on_tribler_shutdown(self):
         await self.shutdown_task_manager()
 
 
 def run_tribler(arguments):
-    service = Service(working_dir=Path(arguments.tribler_dir))
+    working_dir = Path(arguments.tribler_dir)
+    config = TriblerConfig(state_dir=working_dir)
+    config.dht.enabled = True
+    service = Service(config)
 
     loop = asyncio.get_event_loop()
     loop.create_task(service.start_tribler())
