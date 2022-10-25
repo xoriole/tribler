@@ -14,6 +14,7 @@ from tribler.core.check_os import (
 )
 from tribler.core.components.bandwidth_accounting.bandwidth_accounting_component import BandwidthAccountingComponent
 from tribler.core.components.component import Component
+from tribler.core.components.dbus.dbus_component import DbusComponent
 from tribler.core.components.gigachannel.gigachannel_component import GigaChannelComponent
 from tribler.core.components.gigachannel_manager.gigachannel_manager_component import GigachannelManagerComponent
 from tribler.core.components.gui_process_watcher.gui_process_watcher_component import GuiProcessWatcherComponent
@@ -90,6 +91,8 @@ def components_gen(config: TriblerConfig):
         yield VersionCheckComponent()
     if config.chant.enabled and config.chant.manager_enabled and config.libtorrent.enabled:
         yield GigachannelManagerComponent()
+
+    yield DbusComponent()
 
 
 async def core_session(config: TriblerConfig, components: List[Component]) -> int:
