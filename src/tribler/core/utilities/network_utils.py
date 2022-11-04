@@ -2,6 +2,8 @@ import logging
 import random
 import socket
 
+import psutil
+
 
 class FreePortNotFoundError(Exception):
     pass
@@ -84,6 +86,19 @@ class NetworkUtils:
             self.ports_in_use.add(port)
 
         return port
+
+    @staticmethod
+    def get_closest_process_port(process_pid, base_port, max_port_offset=10):
+        process = psutil.Process(process_pid)
+        connections = process.connections(kind='inet4')
+
+        candidate_ports = [connection.laddr.port for connection in connections
+                           if connection.laddr.ip == '127.0.0.1'
+                           and connection.status == 'LISTEN'
+                           and connection.type == socket.SocketKind.SOCK_STREAM
+                           and 0 <= connection.laddr.port - base_port < max_port_offset]
+
+        return min(candidate_ports) if candidate_ports else None
 
 
 default_network_utils = NetworkUtils(remember_checked_ports_enabled=True)

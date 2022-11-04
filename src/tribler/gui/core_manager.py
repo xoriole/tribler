@@ -2,23 +2,26 @@ import logging
 import os
 import re
 import sys
+import time
 from collections import deque
 from pathlib import Path
 from typing import Optional
 
-from PyQt5.QtCore import QObject, QProcess, QProcessEnvironment
+from PyQt5.QtCore import QObject, QProcess, QProcessEnvironment, QTimer
 from PyQt5.QtNetwork import QNetworkRequest
 
+from tribler.core.utilities.network_utils import NetworkUtils
 from tribler.core.utilities.process_checker import ProcessChecker
 from tribler.gui import gui_sentry_reporter
 from tribler.gui.app_manager import AppManager
 from tribler.gui.event_request_manager import EventRequestManager
 from tribler.gui.exceptions import CoreCrashedError
-from tribler.gui.tribler_request_manager import TriblerNetworkRequest
+from tribler.gui.tribler_request_manager import TriblerNetworkRequest, request_manager
 from tribler.gui.utilities import connect
 
 
 CORE_OUTPUT_DEQUE_LENGTH = 10
+RECONNECT_INTERVAL_MS = 1000
 
 
 class CoreManager(QObject):
@@ -57,6 +60,20 @@ class CoreManager(QObject):
 
         connect(self.events_manager.core_connected, self.on_core_connected)
 
+        self.connect_timer = QTimer()
+        self.connect_timer.setSingleShot(True)
+        connect(self.connect_timer.timeout, self.check_core_port)
+        self.connect_timer.start(RECONNECT_INTERVAL_MS)
+
+    def check_core_port(self):
+        detected_port = self.get_detected_core_port()
+        if detected_port:
+            self.connect_timer.stop()
+            request_manager.port = detected_port
+            self.events_manager.connect(detected_port)
+        else:
+            self.connect_timer.start(RECONNECT_INTERVAL_MS)
+
     def on_core_connected(self, _):
         if self.core_finished:
             self._logger.warning('Core connected after the core process is already finished')
@@ -73,22 +90,18 @@ class CoreManager(QObject):
         First test whether we already have a Tribler process listening on port <CORE_API_PORT>.
         If so, use that one and don't start a new, fresh Core.
         """
-        # Connect to the events manager
-        self.events_manager.connect(reschedule_on_err=False)  # do not retry if tribler Core is not running yet
 
         if run_core:
             self.core_args = core_args
             self.core_env = core_env
             self.upgrade_manager = upgrade_manager
-            connect(self.events_manager.reply.error, self.on_event_manager_initial_error)
 
-    def on_event_manager_initial_error(self, _):
-        if self.upgrade_manager:
-            # Start Tribler Upgrader. When it finishes, start Tribler Core
-            connect(self.upgrade_manager.upgrader_finished, self.start_tribler_core)
-            self.upgrade_manager.start()
-        else:
-            self.start_tribler_core()
+            if self.upgrade_manager:
+                # Start Tribler Upgrader. When it finishes, start Tribler Core
+                connect(self.upgrade_manager.upgrader_finished, self.start_tribler_core)
+                self.upgrade_manager.start()
+            else:
+                self.start_tribler_core()
 
     def start_tribler_core(self):
         self.use_existing_core = False
@@ -122,7 +135,6 @@ class CoreManager(QObject):
     def on_core_started(self):
         self.core_started = True
         self.core_running = True
-        self.events_manager.connect(reschedule_on_err=True)  # retry until REST API is ready
 
     def on_core_stdout_read_ready(self):
         if self.app_manager.quitting_app:
@@ -261,3 +273,8 @@ class CoreManager(QObject):
             # It may be hard to guess the real encoding on some systems,
             # but by using the "backslashreplace" error handler we can keep all the received data.
             return output.decode('ascii', errors='backslashreplace')
+
+    def get_detected_core_port(self):
+        if not self.core_process:
+            return None
+        return NetworkUtils().get_closest_process_port(self.core_process.processId(), self.api_port)
