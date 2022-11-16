@@ -60,19 +60,26 @@ class CoreManager(QObject):
 
         connect(self.events_manager.core_connected, self.on_core_connected)
 
-        self.connect_timer = QTimer()
-        self.connect_timer.setSingleShot(True)
-        connect(self.connect_timer.timeout, self.check_core_port)
-        self.connect_timer.start(RECONNECT_INTERVAL_MS)
+        self.core_port_checker = None
 
-    def check_core_port(self):
-        detected_port = self.get_detected_core_port()
+    def setup_core_port_checker(self):
+        self.core_port_checker = QTimer()
+        self.core_port_checker.setSingleShot(True)
+        connect(self.core_port_checker.timeout, self.check_core_port_and_update_services)
+
+    def schedule_core_port_checker(self):
+        if not self.core_port_checker:
+            self.setup_core_port_checker()
+        self.core_port_checker.start(RECONNECT_INTERVAL_MS)
+
+    def check_core_port_and_update_services(self):
+        detected_port = self.detected_core_port()
         if detected_port:
-            self.connect_timer.stop()
+            self.core_port_checker.stop()
             request_manager.port = detected_port
             self.events_manager.connect(detected_port)
         else:
-            self.connect_timer.start(RECONNECT_INTERVAL_MS)
+            self.schedule_core_port_checker()
 
     def on_core_connected(self, _):
         if self.core_finished:
@@ -131,6 +138,7 @@ class CoreManager(QObject):
         connect(self.core_process.finished, self.on_core_finished)
         self._logger.info(f'Start Tribler core process {sys.executable} with arguments: {core_args}')
         self.core_process.start(sys.executable, core_args)
+        self.schedule_core_port_checker()
 
     def on_core_started(self):
         self.core_started = True
@@ -274,7 +282,7 @@ class CoreManager(QObject):
             # but by using the "backslashreplace" error handler we can keep all the received data.
             return output.decode('ascii', errors='backslashreplace')
 
-    def get_detected_core_port(self):
+    def detected_core_port(self):
         if not self.core_process:
             return None
         return NetworkUtils().get_closest_process_port(self.core_process.processId(), self.api_port)
