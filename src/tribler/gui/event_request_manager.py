@@ -37,9 +37,11 @@ class EventRequestManager(QNetworkAccessManager):
 
     def __init__(self, api_port, api_key, error_handler):
         QNetworkAccessManager.__init__(self)
-        url = QUrl("http://localhost:%d/events" % api_port)
-        self.request = QNetworkRequest(url)
-        self.request.setRawHeader(b'X-Api-Key', api_key.encode('ascii'))
+        self.api_port = api_port
+        self.api_key = api_key
+        self.port_detected = False
+        self.request = None
+
         self.start_time = time.time()
         self.connect_timer = QTimer()
         self.current_event_string = ""
@@ -64,6 +66,15 @@ class EventRequestManager(QNetworkAccessManager):
         notifier.add_observer(notifications.remote_query_results, self.on_remote_query_results)
         notifier.add_observer(notifications.tribler_shutdown_state, self.on_tribler_shutdown_state)
         notifier.add_observer(notifications.report_config_error, self.on_report_config_error)
+
+    def create_request(self):
+        url = QUrl("http://localhost:%d/events" % self.api_port)
+        self.request = QNetworkRequest(url)
+        self.request.setRawHeader(b'X-Api-Key', self.api_key.encode('ascii'))
+
+    def update_port(self, new_port):
+        self.api_port = new_port
+        self.create_request()
 
     def on_events_start(self, public_key: str, version: str):
         # if public key format is changed, don't forget to change it at the core side as well
@@ -115,8 +126,8 @@ class EventRequestManager(QNetworkAccessManager):
 
         should_retry = reschedule_on_err and time.time() < self.start_time + CORE_CONNECTION_TIMEOUT
         error_name = self.network_errors.get(error, error)
-        self._logger.info(f"Error {error_name} while trying to connect to Tribler Core"
-                          + (', will retry' if should_retry else ', will not retry'))
+        self._logger.info(f"Error {error_name} while trying to connect to Tribler Core at port {self.api_port} "
+                          + (', will retry' if should_retry else f', will not retry'))
 
         if reschedule_on_err:
             if should_retry:
@@ -178,6 +189,9 @@ class EventRequestManager(QNetworkAccessManager):
         self._logger.info(f"Connecting to events endpoint ({'with' if reschedule_on_err else 'without'} retrying)")
         if self.reply is not None:
             self.reply.deleteLater()
+
+        if self.request is None:
+            self.create_request()
 
         # A workaround for Qt5 bug. See https://github.com/Tribler/tribler/issues/7018
         self.setNetworkAccessible(QNetworkAccessManager.Accessible)

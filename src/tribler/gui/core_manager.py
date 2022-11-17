@@ -14,7 +14,8 @@ from tribler.gui import gui_sentry_reporter
 from tribler.gui.app_manager import AppManager
 from tribler.gui.event_request_manager import EventRequestManager
 from tribler.gui.exceptions import CoreCrashedError
-from tribler.gui.tribler_request_manager import TriblerNetworkRequest
+from tribler.gui.port_checker import PortChecker
+from tribler.gui.tribler_request_manager import TriblerNetworkRequest, request_manager
 from tribler.gui.utilities import connect
 
 
@@ -57,6 +58,8 @@ class CoreManager(QObject):
 
         connect(self.events_manager.core_connected, self.on_core_connected)
 
+        self.port_checker = PortChecker(self.api_port, self.port_checker_callback)
+
     def on_core_connected(self, _):
         if self.core_finished:
             self._logger.warning('Core connected after the core process is already finished')
@@ -90,6 +93,10 @@ class CoreManager(QObject):
         else:
             self.start_tribler_core()
 
+    def port_checker_callback(self, detected_port):
+        request_manager.port = detected_port
+        self.events_manager.update_port(detected_port)
+
     def start_tribler_core(self):
         self.use_existing_core = False
 
@@ -118,6 +125,7 @@ class CoreManager(QObject):
         connect(self.core_process.finished, self.on_core_finished)
         self._logger.info(f'Start Tribler core process {sys.executable} with arguments: {core_args}')
         self.core_process.start(sys.executable, core_args)
+        self.port_checker.setup_with_pid(self.core_process.processId())
 
     def on_core_started(self):
         self.core_started = True
