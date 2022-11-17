@@ -16,6 +16,7 @@ from tribler.gui import gui_sentry_reporter
 from tribler.gui.app_manager import AppManager
 from tribler.gui.event_request_manager import EventRequestManager
 from tribler.gui.exceptions import CoreCrashedError
+from tribler.gui.port_checker import PortChecker
 from tribler.gui.tribler_request_manager import TriblerNetworkRequest, request_manager
 from tribler.gui.utilities import connect
 
@@ -60,26 +61,11 @@ class CoreManager(QObject):
 
         connect(self.events_manager.core_connected, self.on_core_connected)
 
-        self.core_port_checker = None
+        self.port_checker = PortChecker(self.api_port, self.port_checker_callback)
 
-    def setup_core_port_checker(self):
-        self.core_port_checker = QTimer()
-        self.core_port_checker.setSingleShot(True)
-        connect(self.core_port_checker.timeout, self.check_core_port_and_update_services)
-
-    def schedule_core_port_checker(self):
-        if not self.core_port_checker:
-            self.setup_core_port_checker()
-        self.core_port_checker.start(RECONNECT_INTERVAL_MS)
-
-    def check_core_port_and_update_services(self):
-        detected_port = self.detected_core_port()
-        if detected_port:
-            self.core_port_checker.stop()
-            request_manager.port = detected_port
-            self.events_manager.connect(detected_port)
-        else:
-            self.schedule_core_port_checker()
+    def port_checker_callback(self, detected_port):
+        request_manager.port = detected_port
+        self.events_manager.connect(detected_port)
 
     def on_core_connected(self, _):
         if self.core_finished:
@@ -97,7 +83,6 @@ class CoreManager(QObject):
         First test whether we already have a Tribler process listening on port <CORE_API_PORT>.
         If so, use that one and don't start a new, fresh Core.
         """
-
         if run_core:
             self.core_args = core_args
             self.core_env = core_env
@@ -138,7 +123,9 @@ class CoreManager(QObject):
         connect(self.core_process.finished, self.on_core_finished)
         self._logger.info(f'Start Tribler core process {sys.executable} with arguments: {core_args}')
         self.core_process.start(sys.executable, core_args)
-        self.schedule_core_port_checker()
+
+        # After the core process has started, set up the port checker to detect REST API port
+        self.port_checker.setup_with_pid(self.core_process.processId())
 
     def on_core_started(self):
         self.core_started = True

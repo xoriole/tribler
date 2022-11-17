@@ -1,39 +1,58 @@
+import socket
+
+import psutil
 from PyQt5.QtCore import QObject, QTimer
 
 from tribler.core.utilities.network_utils import NetworkUtils
 from tribler.gui.utilities import connect
 
 RECONNECT_INTERVAL_MS = 1000
+MAX_PORTS_TO_CHECK = 10
 
 
 class PortChecker(QObject):
 
-    def __init__(self, process_id, base_port, callback):
+    def __init__(self, base_port, callback):
         QObject.__init__(self, None)
-        self.process_id = process_id
         self.base_port = base_port
         self.callback = callback
-        self.core_port_checker = None
 
-    def setup_core_port_checker(self):
-        self.core_port_checker = QTimer()
-        self.core_port_checker.setSingleShot(True)
-        connect(self.core_port_checker.timeout, self.check_core_port_and_update_services)
+        self.process_id = None
+        self.checker_timer = None
 
-    def schedule_core_port_checker(self):
-        if not self.core_port_checker:
-            self.setup_core_port_checker()
-        self.core_port_checker.start(RECONNECT_INTERVAL_MS)
+    def setup_with_pid(self, pid):
+        self.process_id = pid
+        self.checker_timer = QTimer()
+        self.checker_timer.setSingleShot(True)
+        connect(self.checker_timer.timeout, self.on_timeout)
+        self.checker_timer.start(RECONNECT_INTERVAL_MS)
 
-    def check_core_port_and_update_services(self):
-        detected_port = self.detected_core_port()
+    def on_timeout(self):
+        detected_port = self.detected_port()
+        print(f"detected port: {detected_port}")
         if detected_port:
-            self.core_port_checker.stop()
+            self.checker_timer.stop()
             self.callback(detected_port)
-        else:
-            self.schedule_core_port_checker()
+        elif self.checker_timer:
+            self.checker_timer.start(RECONNECT_INTERVAL_MS)
 
-    def detected_core_port(self):
+    def detected_port(self):
         if not self.process_id:
             return None
-        return NetworkUtils().get_closest_process_port(self.process_id, self.api_port)
+
+        try:
+            process = psutil.Process(self.process_id)
+        except psutil.NoSuchProcess:
+            return None
+
+        connections = process.connections(kind='inet4')
+        candidate_ports = [connection.laddr.port for connection in connections
+                           if self._is_connection_in_range(connection)]
+
+        return min(candidate_ports) if candidate_ports else None
+
+    def _is_connection_in_range(self, connection):
+        return connection.laddr.ip == '127.0.0.1' \
+               and connection.status == 'LISTEN' \
+               and connection.type == socket.SocketKind.SOCK_STREAM \
+               and 0 <= connection.laddr.port - self.base_port < MAX_PORTS_TO_CHECK
