@@ -15,11 +15,19 @@ Building Tribler on macOS
 -------------------------
 Start by checking out the directory you want to clone (using ``git clone``). Open a terminal and ``cd`` to this new cloned directory (referenced to as ``tribler_source`` in this guide).
 
-Next, we should inject version information into the files about the latest release. This is done by the ``update_version_from_git.py`` script found in ``Tribler/Main/Build``. Invoke it from the ``tribler_source`` directory by executing:
+Next, we should inject version information into the files about the latest release. `git` is used to find the latest tag and commit which is to determine the version. Invoke it from the following commands from ``tribler_source`` project directory.
 
 .. code-block:: none
 
-    build/update_version_from_git.py
+    # Sentry is used for error reporting so SENTRY_URL environment variable is expected.
+    # It can be left empty but the environment variable is required to exist.
+    export SENTRY_URL=
+
+    git describe --tags | python -c "import sys; print(next(sys.stdin).lstrip('v'))" > .TriblerVersion
+    git rev-parse HEAD > .TriblerCommit
+    export TRIBLER_VERSION=$(head -n 1 .TriblerVersion)
+
+    python3 ./build/update_version.py -r .
 
 Now execute the builder with the following command:
 
