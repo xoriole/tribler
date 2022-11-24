@@ -22,11 +22,18 @@ Run the following commands in your terminal:
 .. code-block:: none
 
     sudo apt-get install devscripts python-setuptools fonts-noto-color-emoji
+
+    # Sentry is used for error reporting so SENTRY_URL environment variable is expected.
+    # It can be left empty but the environment variable is required to exist.
+    export SENTRY_URL=
+
     cd tribler
-    build/update_version_from_git.py
-    python3 -m PyInstaller tribler.spec
-    cp -r dist/tribler build/debian/tribler/usr/share/tribler
-    dpkg-deb -b build/debian/tribler tribler.deb
+    git describe --tags | python -c "import sys; print(next(sys.stdin).lstrip('v'))" > .TriblerVersion
+    git rev-parse HEAD > .TriblerCommit
+    export TRIBLER_VERSION=$(head -n 1 .TriblerVersion)
+
+    python3 ./build/update_version.py -r .
+    ./build/debian/makedist_debian.sh
 
 This will build a ``tribler.deb`` file, including all dependencies and required libraries.
 
