@@ -16,7 +16,8 @@ class PortChecker(QObject):
     When it finds the closest port, it calls the success callback with the detected port.
     If it does not find the closest port within the range, it calls the timeout callback.
 
-    port_checker = PortChecker(process_id, success_callback, timeout_callback)
+    port_checker = PortChecker(pid, base_port, success_callback, timeout_callback)
+    port_checker.start()
 
     Raises: TimeoutError, NoProcessError
     """
@@ -50,7 +51,6 @@ class PortChecker(QObject):
 
         self.checker_timer = None
         self.timeout_timer = None
-        self._setup_timers()
 
     @staticmethod
     def get_process_from_pid(pid):
@@ -58,6 +58,12 @@ class PortChecker(QObject):
             return psutil.Process(pid)
         except psutil.NoSuchProcess:
             raise ValueError(f"Process[PID:{pid}] does not exist.")
+
+    def start(self):
+        self._setup_timers()
+
+    def stop(self):
+        self._stop_timers()
 
     def _setup_timers(self):
         self.checker_timer = QTimer()

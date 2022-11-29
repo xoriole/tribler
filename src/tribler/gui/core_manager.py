@@ -58,7 +58,7 @@ class CoreManager(QObject):
 
         connect(self.events_manager.core_connected, self.on_core_connected)
 
-        self.port_checker = PortChecker(self.api_port, self.port_checker_callback)
+        self.port_checker = None  #PortChecker(self.api_port, self.port_checker_callback)
 
     def on_core_connected(self, _):
         if self.core_finished:
@@ -93,9 +93,6 @@ class CoreManager(QObject):
         else:
             self.start_tribler_core()
 
-    def port_checker_callback(self, detected_port):
-        request_manager.port = detected_port
-        self.events_manager.update_port(detected_port)
 
     def start_tribler_core(self):
         self.use_existing_core = False
@@ -127,9 +124,23 @@ class CoreManager(QObject):
         self.core_process.start(sys.executable, core_args)
         self.port_checker.setup_with_pid(self.core_process.processId())
 
+    def port_checker_callback(self, detected_port):
+        request_manager.port = detected_port
+        self.events_manager.update_port(detected_port)
+
+    def port_checker_timeout(self):
+        pass
+
     def on_core_started(self):
         self.core_started = True
         self.core_running = True
+
+        core_process_pid = self.core_process.processId()
+        self.port_checker = PortChecker(core_process_pid, self.api_port,
+                                        success_callback=self.port_checker_callback,
+                                        timeout_callback=self.port_checker_timeout)
+        self.port_checker.start()
+
         self.events_manager.connect(reschedule_on_err=True)  # retry until REST API is ready
 
     def on_core_stdout_read_ready(self):
