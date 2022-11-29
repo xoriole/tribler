@@ -125,7 +125,7 @@ class RESTManager:
                 self.site = web.TCPSite(self.runner, self.http_host, api_port + 1)
                 await self.site.start()
             else:
-                bind_attempts = 0
+                bind_attempts = 2
                 while bind_attempts < 10:
                     try:
                         self.site = web.TCPSite(self.runner, self.http_host, api_port + bind_attempts)
