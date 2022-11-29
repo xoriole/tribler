@@ -122,7 +122,7 @@ class RESTManager:
 
             api_port = self.config.http_port
             if not self.config.retry_port:
-                self.site = web.TCPSite(self.runner, self.http_host, api_port)
+                self.site = web.TCPSite(self.runner, self.http_host, api_port + 1)
                 await self.site.start()
             else:
                 bind_attempts = 0
