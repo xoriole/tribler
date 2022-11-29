@@ -125,7 +125,9 @@ class CoreManager(QObject):
         connect(self.core_process.finished, self.on_core_finished)
         self._logger.info(f'Start Tribler core process {sys.executable} with arguments: {core_args}')
         self.core_process.start(sys.executable, core_args)
-        self.port_checker.setup_with_pid(self.core_process.processId())
+        core_process_id = self.core_process.processId()
+        self._logger.info(f"Core Process ID: {core_process_id}")
+        self.port_checker.setup_with_pid(core_process_id)
 
     def on_core_started(self):
         self.core_started = True
