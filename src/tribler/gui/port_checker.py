@@ -12,35 +12,33 @@ MAX_PORTS_TO_CHECK = 10
 
 class PortChecker(QObject):
     """
-    PortChecker finds the closest port of process given a base port.
-    When it finds the closest port, it calls the success callback with the detected port.
-    If it does not find the closest port within the range, it calls the timeout callback.
+    PortChecker finds the closest TCP port bound by a process given a base port.
+    It keeps checking the ports until it finds the closest port within given range or timeout occurs.
+    When it finds the closest port, it calls the success callback (if defined) with the detected port.
+    Else on timeout, it calls timeout callback if defined.
 
+    To use:
     port_checker = PortChecker(pid, base_port, success_callback, timeout_callback)
-    port_checker.start()
 
-    Raises: TimeoutError, NoProcessError
+    Raises: ProcessLookupError if the process with the given pid does not exist.
     """
-
-    on_port_detected_signal = pyqtSignal(object)
-    on_timeout_signal = pyqtSignal()
 
     def __init__(
             self,
             pid: int,
             base_port: int,
-            success_callback: Callable[[int], None],
-            timeout_callback: Callable[[], None],
-            check_timeout_in_sec=120,
-            check_interval_in_sec=1,
-            max_ports_to_check=10
+            on_success: Callable[[int], None] = None,
+            on_timeout: Callable[[], None] = None,
+            check_timeout_in_sec: float = 120,
+            check_interval_in_sec: float = 1,
+            max_ports_to_check: int = 10
     ):
         QObject.__init__(self, None)
-        self.process = self.get_process_from_pid(pid)
+        self.process = PortChecker.get_process_from_pid(pid)
         self.base_port = base_port
 
-        self.success_callback = success_callback
-        self.timeout_callback = timeout_callback
+        self.on_success_callback = on_success
+        self.on_timeout_callback = on_timeout
 
         self.check_interval_in_sec = check_interval_in_sec
         self.check_timeout_in_sec = check_timeout_in_sec
@@ -51,13 +49,14 @@ class PortChecker(QObject):
 
         self.checker_timer = None
         self.timeout_timer = None
+        # self._setup_timers()
 
     @staticmethod
     def get_process_from_pid(pid):
         try:
             return psutil.Process(pid)
         except psutil.NoSuchProcess:
-            raise ValueError(f"Process[PID:{pid}] does not exist.")
+            raise ProcessLookupError(f"Process[PID:{pid}] does not exist.")
 
     def start(self):
         self._setup_timers()
@@ -69,12 +68,12 @@ class PortChecker(QObject):
         self.checker_timer = QTimer()
         self.checker_timer.setSingleShot(False)
         connect(self.checker_timer.timeout, self._check_ports)
-        self.checker_timer.start(self.check_interval_in_sec * 1000)
+        self.checker_timer.start(int(self.check_interval_in_sec * 1000))
 
         self.timeout_timer = QTimer()
         self.timeout_timer.setSingleShot(True)
         connect(self.timeout_timer.timeout, self._check_ports)
-        self.timeout_timer.start(self.check_timeout_in_sec * 1000)
+        self.timeout_timer.start(int(self.check_timeout_in_sec * 1000))
 
     def _stop_timers(self):
         if self.checker_timer:
@@ -88,14 +87,16 @@ class PortChecker(QObject):
     def _check_ports(self):
         self._detect_port_from_process()
         if self.detected_port:
+            print(f"calling check port and detected port: {self.detected_port}")
             self._stop_timers()
-            self.success_callback(self.detected_port)
+            if self.on_success_callback:
+                self.on_success_callback(self.detected_port)
 
     def _on_timeout(self):
         self._stop_timers()
 
-        if not self.detected_port:
-            self.timeout_callback()
+        if not self.detected_port and self.on_timeout_callback:
+            self.on_timeout_callback()
 
     def _detect_port_from_process(self):
         def is_local_listening_connection_in_range(connection):

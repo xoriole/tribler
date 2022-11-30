@@ -1,140 +1,58 @@
 import asyncio
-import socket
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
+from PyQt5 import QtTest
+from PyQt5.QtWidgets import QMainWindow
+from pytestqt.exceptions import capture_exceptions
+from pytestqt.qtbot import QtBot
 
-from tribler.gui import port_checker
 from tribler.gui.port_checker import PortChecker
 
 
-@pytest.fixture
-def mock_port():
-    return 20100
+@pytest.fixture(scope="module")
+def qtbot_session(qapp):
+    print("  SETUP qtbot")
+    result = QtBot(qapp)
+    with capture_exceptions() as exceptions:
+        yield result
+    print("  TEARDOWN qtbot")
 
 
-@pytest.fixture
-def process_with_no_ports():
-    process = MagicMock()
-    process.connections = lambda _: []
-    return process
+@pytest.fixture(scope="module")
+def dummy_window(qtbot_session):
+    print("  SETUP GUI")
+    app = QMainWindow()
+    bot = QtBot(QMainWindow())
+    QtTest.QTest.qWait(2000)
+
+    return app, bot
 
 
-@pytest.fixture
-def process_with_valid_port(mock_port):
-    def mocked_connection(port):
-        connection = MagicMock()
-        connection.status = 'LISTEN'
-        connection.type = socket.SocketKind.SOCK_STREAM
-        connection.laddr = Mock()
-        connection.laddr.ip = '127.0.0.1'
-        connection.laddr.port = port
-        return connection
+async def test_port_checker(qapp):
+    pid = 100
+    port = 20100
+    success_callback = Mock()
+    timeout_callback = Mock()
+    check_interval_in_sec = 0.01
+    check_timeout_in_sec = 0.1
 
-    def connections(kind):
-        min_port = mock_port - port_checker.MAX_PORTS_TO_CHECK
-        max_port = mock_port + port_checker.MAX_PORTS_TO_CHECK
-        return [mocked_connection(port) for port in range(min_port, max_port)]
+    PortChecker.get_process_from_pid = lambda pid: Mock()
 
-    process = MagicMock()
-    process.connections = connections
-    return process
+    def mock_port_detected(port_checker):
+        print(f"calling mock port detected")
+        port_checker.detected_port = port
 
-@pytest.fixture
-def process_with_valid_port(mock_port):
-    def mocked_connection(port):
-        connection = MagicMock()
-        connection.status = 'LISTEN'
-        connection.type = socket.SocketKind.SOCK_STREAM
-        connection.laddr = Mock()
-        connection.laddr.ip = '127.0.0.1'
-        connection.laddr.port = port
-        return connection
+    def mock_port_not_detected(port_checker):
+        print(f"calling port not detected")
+        port_checker.detected_port = None
 
-    def connections(kind):
-        min_port = mock_port - port_checker.MAX_PORTS_TO_CHECK
-        max_port = mock_port + port_checker.MAX_PORTS_TO_CHECK
-        return [mocked_connection(port) for port in range(min_port, max_port)]
-
-    process = MagicMock()
-    process.connections = connections
-    return process
-
-@pytest.fixture
-def process_with_invalid_port(mock_port):
-    def mocked_connection(con_type, ip, port, status):
-        connection = MagicMock()
-        connection.status = status
-        connection.type = type
-        connection.laddr = Mock()
-        connection.laddr.ip = ip
-        connection.laddr.port = port
-        return connection
-
-    def invalid_connection():
-        pass
-
-    def connections(kind):
-        min_port = mock_port - port_checker.MAX_PORTS_TO_CHECK
-        max_port = mock_port + port_checker.MAX_PORTS_TO_CHECK
-        return [mocked_connection(port) for port in range(min_port, max_port)]
-
-    process = MagicMock()
-    process.connections = connections
-    return process
-
-
-@pytest.fixture
-def process_with_invalid_ports(mock_port):
-    connection = MagicMock()
-    connection.status = 'LISTEN'
-    connection.type = socket.SocketKind.SOCK_STREAM
-    connection.laddr = Mock()
-    connection.laddr.ip = '127.0.0.1'
-    connection.laddr.port = mock_port + port_checker.MAX_PORTS_TO_CHECK
-
-    process = MagicMock()
-    process.connections = lambda kind: [connection]
-
-    yield process
-
-def mocker_process(mocker):
-    mocker.mock_open(read_data="oracle")
-
-async def test_detected_port(mock_port, mocker, process_with_valid_port):
-    connection = MagicMock()
-    connection.status = 'LISTEN'
-    connection.type = socket.SocketKind.SOCK_STREAM
-    connection.laddr = Mock()
-    connection.laddr.ip = '127.0.0.1'
-    connection.laddr.port = mock_port
-
-    def fn_connection():
-        print(f"calling connections...")
-        return [connection]
-
-    process = MagicMock()
-    process.connections = lambda kind: fn_connection()
-
-    # mocker.patch("psutil.Process", return_value=process)
-    mocker.patch("psutil.Process", return_value=process_with_valid_port)
-
-    print("patching process here...")
-    # process.connections = lambda _: []
-    print(f"process connections: {process.connections(None)}")
-
-    callback = MagicMock()
-    port_checker = PortChecker(mock_port, callback)
-
-    detected_port = port_checker._detect_port_from_process()
-    assert detected_port is None
-
-    process_id = 1024
-    port_checker.setup_with_pid(process_id)
-
-    await asyncio.sleep(1.0)
-
-    detected_port = port_checker._detect_port_from_process()
-    print(f"port: {detected_port}")
-
-
+    port_checker = PortChecker(pid, port, on_success=success_callback,
+                               on_timeout=timeout_callback,
+                               check_interval_in_sec=check_interval_in_sec,
+                               check_timeout_in_sec=check_timeout_in_sec)
+    port_checker._detect_port_from_process = lambda: mock_port_detected(port_checker)
+    port_checker.start()
+    await asyncio.sleep(check_timeout_in_sec)
+    assert success_callback.assert_called_once()
+    QtTest.QTest.qWait(2000)
