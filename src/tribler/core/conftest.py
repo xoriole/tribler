@@ -1,6 +1,6 @@
 import asyncio
 import os
-import os
+import platform
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -153,6 +153,9 @@ async def file_server(tmp_path, free_port):
     site = web.TCPSite(runner, 'localhost', free_port)
     await site.start()
     yield free_port
+
+    await app.shutdown()
+    await runner.shutdown()
     await site.stop()
 
 
@@ -232,9 +235,16 @@ def test_tdef(state_dir):
     return tdef
 
 
-@pytest.fixture()
-def loop():
-    return asyncio.get_event_loop()
+@pytest.fixture
+def event_loop():
+    if platform.system() == 'Windows':
+        # to prevent the "Loop is closed" error
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture
@@ -243,6 +253,7 @@ async def test_download(mock_dlmgr, test_tdef):
     download = Download(test_tdef, download_manager=mock_dlmgr, config=config)
     download.infohash = hexlify(test_tdef.get_infohash())
     yield download
+
     await download.shutdown()
 
 
@@ -294,4 +305,5 @@ async def download_manager(tmp_path_factory):
     download_manager.metadata_tmpdir = tmp_path_factory.mktemp('metadata_tmpdir')
     download_manager.initialize()
     yield download_manager
+
     await download_manager.shutdown()

@@ -50,10 +50,10 @@ def endpoint(download_manager):
 
 
 @pytest.fixture
-def rest_api(loop, aiohttp_client, endpoint):  # pylint: disable=unused-argument
+def rest_api(event_loop, aiohttp_client, endpoint):  # pylint: disable=unused-argument
     app = Application(middlewares=[error_middleware])
     app.add_subapp('/torrentinfo', endpoint.app)
-    yield loop.run_until_complete(aiohttp_client(app))
+    yield event_loop.run_until_complete(aiohttp_client(app))
     app.shutdown()
 
 
@@ -91,6 +91,9 @@ async def test_get_torrentinfo(tmp_path, rest_api, endpoint: TorrentInfoEndpoint
 
     # Corrupt file
     await do_request(rest_api, url, params={'uri': _path('test_rss.xml')}, expected_code=500)
+
+    # Non-existing file
+    await do_request(rest_api, url, params={'uri': _path('non_existing.torrent')}, expected_code=500)
 
     path = "http://localhost:1234/ubuntu.torrent"
 
