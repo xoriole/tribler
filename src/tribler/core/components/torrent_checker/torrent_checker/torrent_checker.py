@@ -17,8 +17,9 @@ from tribler.core.components.metadata_store.db.store import MetadataStore
 from tribler.core.components.torrent_checker.torrent_checker import DHT
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import HEALTH_FRESHNESS_SECONDS, HealthInfo, \
     TrackerResponse
+from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
 from tribler.core.components.torrent_checker.torrent_checker.torrentchecker_session import \
-    FakeBep33DHTSession, FakeDHTSession, TrackerSession, UdpSocketManager, create_tracker_session
+    FakeBep33DHTSession, FakeDHTSession, TrackerSession, create_tracker_session
 from tribler.core.components.torrent_checker.torrent_checker.tracker_manager import MAX_TRACKER_FAILURES, TrackerManager
 from tribler.core.components.torrent_checker.torrent_checker.utils import aggregate_responses_for_infohash, \
     filter_non_exceptions, gather_coros
