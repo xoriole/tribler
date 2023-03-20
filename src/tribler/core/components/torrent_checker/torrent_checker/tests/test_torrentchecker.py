@@ -16,7 +16,8 @@ from tribler.core.components.torrent_checker.torrent_checker.dataclasses import 
     TrackerResponse
 from tribler.core.components.torrent_checker.torrent_checker.torrent_checker import TorrentChecker
 from tribler.core.components.torrent_checker.torrent_checker.torrentchecker_session import \
-    HttpTrackerSession, UdpSocketManager
+    UdpSocketManager
+from tribler.core.components.torrent_checker.torrent_checker.session.http_tracker import HttpTrackerSession
 from tribler.core.components.torrent_checker.torrent_checker.tracker_manager import TrackerManager
 from tribler.core.components.torrent_checker.torrent_checker.utils import aggregate_responses_for_infohash, \
     filter_non_exceptions

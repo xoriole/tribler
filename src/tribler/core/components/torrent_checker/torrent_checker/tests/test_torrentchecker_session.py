@@ -10,7 +10,10 @@ from libtorrent import bencode
 
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import HealthInfo
 from tribler.core.components.torrent_checker.torrent_checker.torrentchecker_session import \
-    FakeBep33DHTSession, FakeDHTSession, HttpTrackerSession, UdpSocketManager, UdpTrackerSession
+    UdpSocketManager
+from tribler.core.components.torrent_checker.torrent_checker.session.dht import FakeDHTSession, FakeBep33DHTSession
+from tribler.core.components.torrent_checker.torrent_checker.session.udp_tracker import UdpTrackerSession
+from tribler.core.components.torrent_checker.torrent_checker.session.http_tracker import HttpTrackerSession
 
 
 # pylint: disable=redefined-outer-name

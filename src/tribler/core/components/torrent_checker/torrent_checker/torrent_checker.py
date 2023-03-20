@@ -19,7 +19,9 @@ from tribler.core.components.torrent_checker.torrent_checker.dataclasses import 
     TrackerResponse
 from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
 from tribler.core.components.torrent_checker.torrent_checker.torrentchecker_session import \
-    FakeBep33DHTSession, FakeDHTSession, TrackerSession, create_tracker_session
+    create_tracker_session
+from tribler.core.components.torrent_checker.torrent_checker.session.dht import FakeDHTSession, FakeBep33DHTSession
+from tribler.core.components.torrent_checker.torrent_checker.session.tracker import TrackerSession
 from tribler.core.components.torrent_checker.torrent_checker.tracker_manager import MAX_TRACKER_FAILURES, TrackerManager
 from tribler.core.components.torrent_checker.torrent_checker.utils import aggregate_responses_for_infohash, \
     filter_non_exceptions, gather_coros
