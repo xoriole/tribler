@@ -1,4 +1,5 @@
 import asyncio
+from binascii import unhexlify
 from typing import Optional
 
 from ipv8.taskmanager import TaskManager
@@ -6,7 +7,7 @@ from ipv8.taskmanager import TaskManager
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import HealthInfo
 from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
 from tribler.core.components.torrent_checker.torrent_checker.trackers import TrackerException
-from tribler.core.components.torrent_checker.torrent_checker.trackers.dht import DHTTracker
+from tribler.core.components.torrent_checker.torrent_checker.trackers.dht import DHTTracker, DhtRequestCache
 from tribler.core.components.torrent_checker.torrent_checker.trackers.http import HttpTracker
 from tribler.core.components.torrent_checker.torrent_checker.trackers.udp import UdpTracker
 from tribler.core.components.torrent_checker.torrent_checker.utils import filter_non_exceptions, \
@@ -27,6 +28,8 @@ class CheckerService(TaskManager):
 
     async def initialize(self):
         await self.create_socket_or_schedule()
+        # infohash = unhexlify("8b851cd45092b458da23ba0ed834906d79f4e2d7")
+        # dht_request = DhtRequestCache(infohash)
 
     async def listen_on_udp(self):
         loop = asyncio.get_event_loop()
@@ -63,8 +66,8 @@ class CheckerService(TaskManager):
         await self.shutdown_task_manager()
 
     async def get_health_info(self, infohash, trackers=None, timeout=20) -> HealthInfo:
-        if not trackers:
-            trackers = ['DHT']
+        # if not trackers:
+        trackers = ['DHT']
 
         tracker_response_coros = []
         for tracker_url in trackers:

@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import math
 import random
@@ -9,12 +10,13 @@ from binascii import hexlify
 from typing import List, Tuple
 
 import libtorrent as lt
+from ipv8.requestcache import RequestCache, NumberCache
 from ipv8.taskmanager import TaskManager
 
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import TrackerResponse, UdpRequest, HealthInfo, \
     UdpRequestType
 from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
-from tribler.core.components.torrent_checker.torrent_checker.trackers import Tracker
+from tribler.core.components.torrent_checker.torrent_checker.trackers import Tracker, dht_utils
 
 MAX_NODES_TO_REQUEST = 1000
 MAX_RESPONSES_TO_WAIT = 100
@@ -24,6 +26,55 @@ DEFAULT_DHT_ROUTERS = [
 ]
 
 MAX_INT32 = 2 ** 16 - 1
+
+
+class DhtRequestCache(NumberCache):
+    """
+    Used to track outstanding dht request messages
+    """
+    def __init__(self, request_cache, infohash, timeout=15):
+        super().__init__(request_cache, "DHT", hash(infohash))
+        self.infohash = infohash
+
+        self.response = {}
+        self.response_future = Future()
+        self.register_future(self.response_future)
+
+        self.timeout = timeout
+
+        self.transaction_ids = set()
+        self.bf_seeders = bytearray(256)
+        self.bf_peers = bytearray(256)
+
+    @property
+    def timeout_delay(self):
+        return float(self.timeout)
+
+    def register_transaction_id(self, transaction_id):
+        print(f"DHT: registering transaction id")
+        self.transaction_ids.add(transaction_id)
+
+    def register_dht_response(self, transaction_id, bf_seeds, bf_peers):
+        print(f"DHT: registering response")
+        if transaction_id not in self.transaction_ids:
+            return
+
+        self.transaction_ids.remove(transaction_id)
+        self.bf_seeders = dht_utils.combine_bloomfilters(self.bf_seeders, bf_seeds)
+        self.bf_peers = dht_utils.combine_bloomfilters(self.bf_peers, bf_peers)
+
+    def on_timeout(self):
+        if self.response_future.done():
+            return
+
+        seeders = dht_utils.get_size_from_bloomfilter(self.bf_seeders)
+        peers = dht_utils.get_size_from_bloomfilter(self.bf_peers)
+
+        health = HealthInfo(self.infohash, last_check=int(time.time()), seeders=seeders, leechers=peers,
+                            self_checked=True)
+
+        tracker_response = TrackerResponse('DHT', [health])
+        self.response_future.set_result(tracker_response)
 
 
 class DHTTracker(TaskManager, Tracker):
@@ -47,27 +98,54 @@ class DHTTracker(TaskManager, Tracker):
         self.infohash_to_nodes = dict()
         self.infohash_to_responses = dict()
 
+        self.request_cache = RequestCache()
+        self.tx_id_to_cache = {}
+
+    def is_outstanding(self, infohash):
+        print(f"{datetime.datetime.now()}: checking outstanding....")
+        exists = self.request_cache.has("DHT", hash(infohash))
+        print(f"{datetime.datetime.now()}: exists: {exists}")
+        return exists
+
+    def get_outstanding_request(self, infohash) -> DhtRequestCache:
+        return self.request_cache.get("DHT", hash(infohash))
+
+    def get_outstanding_request_by_tx_id(self, infohash) -> DhtRequestCache:
+        return self.request_cache.get("DHT", hash(infohash))
+
     async def get_health(self, infohash, timeout=15) -> TrackerResponse:
         """
         Lookup the health of a given infohash.
         :param infohash: The 20-byte infohash to lookup.
         :param timeout: The timeout of the lookup.
         """
-        if infohash in self.lookup_futures:
-            return await self.lookup_futures[infohash]
+        # if infohash in self.lookup_futures:
+        #     return await self.lookup_futures[infohash]
+        #
+        # lookup_future = Future()
+        # self.lookup_futures[infohash] = lookup_future
+        # self.bf_seeders[infohash] = bytearray(256)
+        # self.bf_peers[infohash] = bytearray(256)
 
-        lookup_future = Future()
-        self.lookup_futures[infohash] = lookup_future
-        self.bf_seeders[infohash] = bytearray(256)
-        self.bf_peers[infohash] = bytearray(256)
+        if self.is_outstanding(infohash):
+            return await self.get_outstanding_request(infohash).response_future
+
+        dht_request = DhtRequestCache(self.request_cache, infohash)
+        cache = self.request_cache.add(dht_request)
+        # print(f"returned cache: {cache}")
 
         # Initially send request to one of the default DHT router and get the closest nodes.
         # Then query those nodes and process the Bloom filters from the response.
         await self.send_request_to_dht_router_and_continue(infohash)
 
-        self.register_task(f"lookup_{hexlify(infohash)}", self.finalize_lookup, infohash, delay=timeout)
+        # self.register_task(f"lookup_{hexlify(infohash)}", self.finalize_lookup, infohash, delay=timeout)
+        #
+        # return await lookup_future
+        print(f"Waiting for DHT response")
+        response = await dht_request.response_future
+        print(f"DHT response: {response}")
 
-        return await lookup_future
+        return response
 
     async def send_request_to_dht_router_and_continue(self, infohash):
         # Select one of the default router and send the peer request.
@@ -87,8 +165,9 @@ class DHTTracker(TaskManager, Tracker):
         # map to transaction ID to infohash for associating response to infohash.
         transaction_id = self.generate_unique_transaction_id()
         self.tid_to_infohash[transaction_id] = infohash
+        self.register_transaction_id(infohash, transaction_id)
 
-        payload = DHTTracker.compose_dht_get_peers_payload(transaction_id, infohash)
+        payload = dht_utils.compose_dht_get_peers_payload(transaction_id, infohash)
         self.requesting_bloomfilters(transaction_id, infohash)
 
         udp_request = UdpRequest(
@@ -101,22 +180,13 @@ class DHTTracker(TaskManager, Tracker):
         )
         return udp_request
 
-    @staticmethod
-    def compose_dht_get_peers_payload(transaction_id: bytes, infohash: bytes):
-        target = infohash
-        request = {
-            't': transaction_id,
-            'y': b'q',
-            'q': b'get_peers',
-            'a': {
-                'id': infohash,
-                'info_hash': target,
-                'noseed': 1,
-                'scrape': 1
-            }
-        }
-        payload = lt.bencode(request)
-        return payload
+    def register_transaction_id(self, infohash, tx_id):
+        cache = self.get_outstanding_request(infohash)
+        if not cache:
+            print(f"Cache not found for infohash: {infohash}")
+            return
+        cache.register_transaction_id(tx_id)
+        self.tx_id_to_cache[tx_id] = cache
 
     def generate_unique_transaction_id(self):
         while True:
@@ -149,24 +219,14 @@ class DHTTracker(TaskManager, Tracker):
         bf_seeders = self.bf_seeders.pop(infohash)
         bf_peers = self.bf_peers.pop(infohash)
 
-        seeders = DHTTracker.get_size_from_bloomfilter(bf_seeders)
-        peers = DHTTracker.get_size_from_bloomfilter(bf_peers)
+        seeders = dht_utils.get_size_from_bloomfilter(bf_seeders)
+        peers = dht_utils.get_size_from_bloomfilter(bf_peers)
 
         health = HealthInfo(infohash, last_check=int(time.time()), seeders=seeders, leechers=peers, self_checked=True)
         self.health_result[infohash] = health
 
         tracker_response = TrackerResponse('DHT', [health])
         self.lookup_futures[infohash].set_result(tracker_response)
-
-    def decode_nodes(self, nodes: bytes) -> List[Tuple[str, str, int]]:
-        decoded_nodes = []
-        for i in range(0, len(nodes), 26):
-            node_id = nodes[i:i + 20].hex()
-            ip_bytes = nodes[i + 20:i + 24]
-            ip_addr = '.'.join(str(byte) for byte in ip_bytes)
-            port = int.from_bytes(nodes[i + 24:i + 26], byteorder='big')
-            decoded_nodes.append((node_id, ip_addr, port))
-        return decoded_nodes
 
     async def proccess_dht_response(self, decoded):
         if b'r' in decoded:
@@ -178,7 +238,7 @@ class DHTTracker(TaskManager, Tracker):
             dht_response = decoded[b'r']
             if b'nodes' in dht_response:
                 b_nodes = dht_response[b'nodes']
-                decoded_nodes = self.decode_nodes(b_nodes)
+                decoded_nodes = dht_utils.decode_nodes(b_nodes)
                 await self.send_dht_get_peers_request_to_closest_nodes(infohash, decoded_nodes)
 
             # We received a raw DHT message - decode it and check whether it is a BEP33 message.
@@ -191,6 +251,12 @@ class DHTTracker(TaskManager, Tracker):
                 self.received_bloomfilters(transaction_id,
                                            bytearray(seeders_bloom_filter),
                                            bytearray(peers_bloom_filter))
+                self.register_dht_response(transaction_id, seeders_bloom_filter, peers_bloom_filter)
+
+    def register_dht_response(self, transaction_id, bf_seeds, bf_peers):
+        cache: DhtRequestCache = self.tx_id_to_cache.get(transaction_id, None)
+        if cache:
+            cache.register_dht_response(transaction_id, bf_seeds, bf_peers)
 
     async def send_dht_get_peers_request_to_closest_nodes(self, infohash, decoded_nodes):
         sent_nodes = self.infohash_to_nodes.get(infohash, [])
@@ -207,50 +273,6 @@ class DHTTracker(TaskManager, Tracker):
                 await self.send_dht_get_peers_request(node_ip, node_port, infohash)
                 sent_nodes.append(ip_port_str)
                 self.infohash_to_nodes[infohash] = sent_nodes
-
-    @staticmethod
-    def combine_bloomfilters(bf1, bf2):
-        """
-        Combine two given bloom filters by ORing the bits.
-        :param bf1: The first bloom filter to combine.
-        :param bf2: The second bloom filter to combine.
-        :return: A bytearray with the combined bloomfilter.
-        """
-        final_bf_len = min(len(bf1), len(bf2))
-        final_bf = bytearray(final_bf_len)
-        for bf_index in range(final_bf_len):
-            final_bf[bf_index] = bf1[bf_index] | bf2[bf_index]
-        return final_bf
-
-    @staticmethod
-    def get_size_from_bloomfilter(bf):
-        """
-        Return the estimated number of items in the bloom filter.
-        :param bf: The bloom filter of which we estimate the size.
-        :return: A rounded integer, approximating the number of items in the filter.
-        """
-
-        def tobits(s):
-            result = []
-            for c in s:
-                num = ord(c) if isinstance(c, str) else c
-                bits = bin(num)[2:]
-                bits = '00000000'[len(bits):] + bits
-                result.extend([int(b) for b in bits])
-            return result
-
-        bits_array = tobits(bytes(bf))
-        total_zeros = 0
-        for bit in bits_array:
-            if bit == 0:
-                total_zeros += 1
-
-        if total_zeros == 0:
-            return 6000  # The maximum capacity of the bloom filter used in BEP33
-
-        m = 256 * 8
-        c = min(m - 1, total_zeros)
-        return int(math.log(c / float(m)) / (2 * math.log(1 - 1 / float(m))))
 
     def requesting_bloomfilters(self, transaction_id, infohash):
         """
@@ -281,8 +303,9 @@ class DHTTracker(TaskManager, Tracker):
             self._logger.info("Could not find lookup infohash for incoming BEP33 bloomfilters")
             return
 
-        self.bf_seeders[infohash] = DHTTracker.combine_bloomfilters(self.bf_seeders[infohash], bf_seeds)
-        self.bf_peers[infohash] = DHTTracker.combine_bloomfilters(self.bf_peers[infohash], bf_peers)
+        self.bf_seeders[infohash] = dht_utils.combine_bloomfilters(self.bf_seeders[infohash], bf_seeds)
+        self.bf_peers[infohash] = dht_utils.combine_bloomfilters(self.bf_peers[infohash], bf_peers)
 
     async def shutdown(self):
+        await self.request_cache.shutdown()
         await self.shutdown_task_manager()
