@@ -159,6 +159,7 @@ def run_tribler_core_session(api_port: int, api_key: str, state_dir: Path, gui_t
         asyncio.set_event_loop(asyncio.SelectorEventLoop())
 
     loop = asyncio.get_event_loop()
+    loop.set_debug(True)
     exception_handler = default_core_exception_handler
     loop.set_exception_handler(exception_handler.unhandled_error_observer)
 
