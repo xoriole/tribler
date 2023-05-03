@@ -11,7 +11,7 @@ from tribler.core.utilities.path_util import Path
 from tribler.gui.defs import TAG_HORIZONTAL_MARGIN
 from tribler.gui.dialogs.dialogcontainer import DialogContainer
 from tribler.gui.network.request_manager import request_manager
-from tribler.gui.utilities import connect, get_objects_with_predicate, get_ui_file_path, tr
+from tribler.gui.utilities import connect, get_objects_with_predicate, get_ui_file_path, tr, get_i18n_file_path
 from tribler.gui.widgets.tagbutton import TagButton
 
 METADATA_TABLE_PREDICATES = [ResourceType.TITLE, ResourceType.DESCRIPTION, ResourceType.DATE, ResourceType.LANGUAGE]
@@ -46,7 +46,7 @@ class EditMetadataDialog(DialogContainer):
         connect(self.dialog_widget.edit_metadata_table.doubleClicked, self.on_edit_metadata_table_item_clicked)
 
         # Load the languages
-        languages_path = get_ui_file_path("languages.json")
+        languages_path = get_i18n_file_path("languages.json")
         content = Path(languages_path).read_text(encoding='utf-8')
         self.languages = json.loads(content)
 

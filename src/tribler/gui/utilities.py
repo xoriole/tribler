@@ -223,6 +223,10 @@ def get_ui_file_path(filename):
     return os.path.join(get_base_path(), 'qt_resources', filename)
 
 
+def get_i18n_file_path(filename):
+    return os.path.join(get_base_path(), 'i18n', filename)
+
+
 def get_image_path(filename: str, convert_slashes_to_forward: bool = False) -> str:
     """
     Return a path to a particular file in the image directory.
