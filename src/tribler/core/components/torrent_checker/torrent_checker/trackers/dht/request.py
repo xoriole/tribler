@@ -74,6 +74,5 @@ class DhtHealthRequest(NumberCache):
         if self.response_future.done():
             return
 
-        health = self.get_health_info()
-        tracker_response = TrackerResponse('DHT', [health])
-        self.response_future.set_result(tracker_response)
+        health_info = self.get_health_info()
+        self.response_future.set_result(health_info)

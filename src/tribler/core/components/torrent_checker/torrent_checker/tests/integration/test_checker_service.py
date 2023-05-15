@@ -4,6 +4,7 @@ import pytest
 from pytest_asyncio import fixture
 
 from tribler.core.components.torrent_checker.torrent_checker.checker_service import CheckerService
+from tribler.core.components.torrent_checker.torrent_checker.trackers import TrackerException
 from tribler.core.components.torrent_checker.torrent_checker.trackers.http import HttpTracker
 
 
@@ -25,9 +26,25 @@ async def checker_service_fixture():
 @pytest.mark.asyncio
 async def test_checker_service(checker_service):
     for tracker in [HTTP_TRACKER_URL, UDP_TRACKER_URL, DHT_TRACKER_URL]:
-        response = await checker_service.get_tracker_response(tracker, [SAMPLE_INFOHASH])
-        print(response)
+        response = await checker_service.get_tracker_response(tracker, [SAMPLE_INFOHASH], timeout=1)
 
         assert response.torrent_health_list
         assert response.torrent_health_list[0].seeders >= 0
         assert response.torrent_health_list[0].leechers >= 0
+
+
+@pytest.mark.asyncio
+async def test_unknown_tracker(checker_service):
+    unknown_tracker_url = "whatever://tracker.com"
+    with pytest.raises(TrackerException):
+        _ = await checker_service.get_tracker_response(unknown_tracker_url, [SAMPLE_INFOHASH], timeout=1)
+
+
+@pytest.mark.asyncio
+async def test_get_health_info(checker_service):
+    tracker_urls = [HTTP_TRACKER_URL, UDP_TRACKER_URL, DHT_TRACKER_URL]
+    response = await checker_service.get_health_info(SAMPLE_INFOHASH, tracker_urls, timeout=1)
+
+    assert response is not None
+    assert response.seeders >= 0
+    assert response.leechers >= 0

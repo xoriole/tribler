@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 
-from tribler.core.components.torrent_checker.torrent_checker.dataclasses import TrackerResponse, UdpRequest
+from tribler.core.components.torrent_checker.torrent_checker.dataclasses import TrackerResponse, UdpRequest, HealthInfo
 from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
 from tribler.core.components.torrent_checker.torrent_checker.trackers import Tracker
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.dht_response import DhtResponse
@@ -26,7 +26,10 @@ class DHTTracker(Tracker):
 
         self.request_manager = DhtRequestManager()
 
-    async def get_torrent_health(self, tracker_url, infohash, timeout=5) -> TrackerResponse:
+    def is_supported_url(self, tracker_url: str):
+        return not tracker_url or tracker_url.lower().startswith("dht")
+
+    async def get_torrent_health(self, infohash, tracker_url, timeout=5) -> HealthInfo:
         if self.request_manager.request_exists(infohash):
             return await self.request_manager.get_request(infohash).response_future
 
@@ -34,7 +37,13 @@ class DHTTracker(Tracker):
         return await dht_request.response_future
 
     async def get_tracker_response(self, tracker_url, infohashes, timeout=5) -> TrackerResponse:
-        return await self.get_torrent_health(tracker_url, infohashes[0], timeout=timeout)
+        # We can only check one infohash at a time so, we collect all co-routines and send the responses
+        torrent_health_list = []
+        for infohash in infohashes:
+            health_info = await self.get_torrent_health(infohash, None, timeout=timeout)
+            torrent_health_list.append(health_info)
+
+        return TrackerResponse('DHT', torrent_health_list)
 
     async def create_health_check_request(self, infohash, timeout) -> DhtHealthRequest:
         health_request = self.request_manager.new_health_request(infohash, timeout)

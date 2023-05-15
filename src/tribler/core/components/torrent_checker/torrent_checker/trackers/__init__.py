@@ -2,6 +2,15 @@
 
 class Tracker:
 
+    async def init(self):
+        pass
+
+    async def shutdown(self):
+        pass
+
+    def is_supported_url(self, tracker_url: str):
+        pass
+
     async def get_tracker_response(self, tracker_url, infohashes, timeout=5):
         pass
 

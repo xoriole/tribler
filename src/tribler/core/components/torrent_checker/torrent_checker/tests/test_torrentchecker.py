@@ -50,8 +50,8 @@ async def test_create_socket_fail(torrent_checker):
         raise OSError("Something went wrong")
 
     torrent_checker.socket_mgr = UdpSocketManager()
-    torrent_checker.listen_on_udp = mocked_listen_on_udp
-    await torrent_checker.create_socket_or_schedule()
+    torrent_checker._create_udp_socket = mocked_listen_on_udp
+    await torrent_checker._create_socket_or_schedule()
 
     assert torrent_checker.udp_transport is None
     assert torrent_checker.is_pending_task_active("listen_udp_port")

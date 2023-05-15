@@ -37,7 +37,10 @@ class UdpTracker(Tracker):
 
         self.transaction_id = 0
 
-    async def get_torrent_health(self, tracker_url, infohash, timeout=5):
+    def is_supported_url(self, tracker_url: str):
+        return tracker_url.lower().startswith("udp://")
+
+    async def get_torrent_health(self, infohash, tracker_url, timeout=5):
         tracker_response: TrackerResponse = await self.get_tracker_response(tracker_url, [infohash], timeout=timeout)
         if tracker_response and tracker_response.torrent_health_list:
             return tracker_response.torrent_health_list[0]

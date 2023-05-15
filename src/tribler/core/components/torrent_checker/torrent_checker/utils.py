@@ -33,3 +33,15 @@ def aggregate_responses_for_infohash(infohash: bytes, responses: List[TrackerRes
             if health.infohash == infohash and health > result:
                 result = health
     return result
+
+
+def aggregate_health_info(infohash: bytes, responses: List[HealthInfo]) -> HealthInfo:
+    """
+    Finds the "best" health info (with the max number of seeders) for a specified infohash
+    """
+    result = HealthInfo(infohash, last_check=0)
+    for health in responses:
+        print(health)
+        if health.infohash == infohash and health > result:
+            result = health
+    return result
