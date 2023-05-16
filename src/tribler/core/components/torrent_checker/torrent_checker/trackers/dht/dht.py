@@ -3,7 +3,7 @@ import logging
 import random
 
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import TrackerResponse, UdpRequest, HealthInfo
-from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
+from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpTrackerDataProtocol
 from tribler.core.components.torrent_checker.torrent_checker.trackers import Tracker
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.dht_response import DhtResponse
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.request import DhtHealthRequest
@@ -19,14 +19,44 @@ class DHTTracker(Tracker):
     """
     This class manages BEP33 health requests to the libtorrent DHT.
     """
-    def __init__(self, udp_socket_server: UdpSocketManager, proxy=None):
+    """
+    DHT Tracker with support for using proxy for anonymized requests.
+    It uses BEP33 protocol for obtaining torrent health information.
+    
+    It depends on UdpSocketManager(DatagramProtocol) for sending and receiving UDP messages.
+
+    Usage:
+    
+    # Without Proxy
+    dht_tracker = DHTTracker()
+
+    # With Proxy
+    dht_tracker = DhtTracker(proxy='localhost:5000')
+
+    # To get torrent health info
+    torrent_health_info = await http_tracker.get_torrent_health(b'infohash', 'https://sometracker.com', timeout=5)
+    """
+    def __init__(self, udp_socket_server: UdpTrackerDataProtocol, proxy=None):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.socket_mgr = udp_socket_server
         self.proxy = proxy
 
         self.request_manager = DhtRequestManager()
 
-    def is_supported_url(self, tracker_url: str):
+    def init(self, udp_socket_server: UdpTrackerDataProtocol):
+        pass
+
+    def is_supported_url(self, tracker_url: str) -> bool:
+        """
+        Return True if the tracker_url is supported.
+
+        Args:
+            tracker_url: Tracker URL.
+
+        Returns:
+            True: If the tracker URL is None or is 'dht' (case-insensitive)
+            False: Otherwise
+        """
         return not tracker_url or tracker_url.lower().startswith("dht")
 
     async def get_torrent_health(self, infohash, tracker_url, timeout=5) -> HealthInfo:

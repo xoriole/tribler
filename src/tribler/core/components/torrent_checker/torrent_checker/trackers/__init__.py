@@ -2,7 +2,7 @@
 
 class Tracker:
 
-    async def init(self):
+    async def init(self, *args, **kwargs):
         pass
 
     async def shutdown(self):

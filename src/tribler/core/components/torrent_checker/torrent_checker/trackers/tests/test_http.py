@@ -18,34 +18,34 @@ SAMPLE_INVALID_TRACKER_RESPONSE = b'd8:announce36:http://tracker.example.com/inv
 
 
 @pytest.fixture
-def http_tracker():
+def dht_tracker():
     return HttpTracker()
 
 
-def test_is_supported_url(http_tracker):
-    assert http_tracker.is_supported_url("http://example.com")
-    assert not http_tracker.is_supported_url("udp://example.com")
+def test_is_supported_url(dht_tracker):
+    assert dht_tracker.is_supported_url("http://example.com")
+    assert not dht_tracker.is_supported_url("udp://example.com")
 
 
-def test_get_scrape_url(http_tracker):
+def test_get_scrape_url(dht_tracker):
     tracker_url = "http://example.com/announce"
     infohashes = ["0123456789abcdef"]
 
     with patch("tribler.core.utilities.tracker_utils.parse_tracker_url",
                return_value=("http", ("example.com", "80"), "/announce")):
-        result = http_tracker.get_scrape_url(tracker_url, infohashes)
+        result = dht_tracker.get_scrape_url(tracker_url, infohashes)
 
     assert result == "http://example.com:80/scrape?info_hash=0123456789abcdef"
 
 
-def test_get_proxy_connector_with_proxy(http_tracker):
+def test_get_proxy_connector_with_proxy(dht_tracker):
     proxy = "socks5://127.0.0.1:9050"
-    connector = http_tracker.get_proxy_connector(proxy)
+    connector = dht_tracker.get_proxy_connector(proxy)
     assert connector is not None
 
 
-def test_get_proxy_connector_without_proxy(http_tracker):
-    connector = http_tracker.get_proxy_connector(None)
+def test_get_proxy_connector_without_proxy(dht_tracker):
+    connector = dht_tracker.get_proxy_connector(None)
     assert connector is None
 
 
