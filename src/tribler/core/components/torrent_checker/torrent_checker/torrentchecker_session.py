@@ -199,7 +199,7 @@ class UdpSocketManager(DatagramProtocol):
 
     async def send_request(self, data, tracker_session):
         transport = self.transport
-        proxy = tracker_session.proxy
+        proxy = tracker_session.socks_proxy
 
         if proxy:
             transport = self.proxy_transports.get(proxy, Socks5Client(proxy, self.datagram_received))

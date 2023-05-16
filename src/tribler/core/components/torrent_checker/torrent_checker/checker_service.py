@@ -3,11 +3,11 @@ import asyncio
 from ipv8.taskmanager import TaskManager
 
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import HealthInfo, TrackerResponse
-from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpSocketManager
+from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpTrackerDataProtocol
 from tribler.core.components.torrent_checker.torrent_checker.trackers import TrackerException
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.dht import DHTTracker
 from tribler.core.components.torrent_checker.torrent_checker.trackers.http import HttpTracker
-from tribler.core.components.torrent_checker.torrent_checker.trackers.udp import UdpTracker
+from tribler.core.components.torrent_checker.torrent_checker.trackers.udp.tracker import UdpTracker
 from tribler.core.components.torrent_checker.torrent_checker.utils import filter_non_exceptions, \
     gather_coros, aggregate_health_info
 
@@ -32,7 +32,7 @@ class CheckerService(ICheckerService, TaskManager):
     def __init__(self, proxy=None):
         super().__init__()
         self.proxy = proxy
-        self.socket_mgr = UdpSocketManager()
+        self.socket_mgr = UdpTrackerDataProtocol()
         self.udp_transport = None
         self.trackers = []
 

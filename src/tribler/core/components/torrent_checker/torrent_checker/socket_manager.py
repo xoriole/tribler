@@ -9,7 +9,7 @@ from tribler.core.components.socks_servers.socks5.client import Socks5Client
 from tribler.core.components.torrent_checker.torrent_checker.dataclasses import UdpRequest
 
 
-class UdpSocketManager(DatagramProtocol):
+class UdpTrackerDataProtocol(DatagramProtocol):
     """
     The UdpSocketManager is essentially a UDP service which provides the methods for sending and receiving UDP
     request and response packets. This also ensures that the packets are properly passed through socks proxy,
