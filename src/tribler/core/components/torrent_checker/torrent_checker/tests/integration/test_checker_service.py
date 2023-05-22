@@ -26,7 +26,7 @@ async def checker_service_fixture():
 @pytest.mark.asyncio
 async def test_checker_service(checker_service):
     # for tracker in [HTTP_TRACKER_URL, UDP_TRACKER_URL, DHT_TRACKER_URL]:
-    for tracker in [UDP_TRACKER_URL]:
+    for tracker in [DHT_TRACKER_URL]:
         response = await checker_service.get_tracker_response(tracker, [SAMPLE_INFOHASH], timeout=1)
         print(response)
 

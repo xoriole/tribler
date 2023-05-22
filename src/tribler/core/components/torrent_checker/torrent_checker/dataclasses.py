@@ -109,14 +109,12 @@ class UdpRequestType(enum.IntEnum):
 
 
 @dataclass
-class UdpRequest:
+class BaseUdpRequest:
     request_type: UdpRequestType
     transaction_id: Union[int, bytes]
     receiver: Tuple[str, int]
     data: bytes = field(repr=False)
-    connection_id: str = None
     socks_proxy: Tuple[str, int] = None
-    infohashes: List[bytes] = None
     response: Future = Future()
 
     def is_connection_request(self):
@@ -127,3 +125,14 @@ class UdpRequest:
 
     def is_dht_request(self):
         return self.request_type == UdpRequestType.DHT_REQUEST
+
+
+@dataclass
+class UdpRequest(BaseUdpRequest):
+    connection_id: str = None
+    infohashes: List[bytes] = None
+
+
+@dataclass
+class DhtTrackerRequest(BaseUdpRequest):
+    infohash: List[bytes] = None

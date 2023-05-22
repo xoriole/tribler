@@ -31,7 +31,11 @@ class InvalidHttpResponse(TrackerException):
         super().__init__(f"HTTP Error {status}")
 
 
-# TrackerException("UDP socket transport is not ready yet")
 class UDPSocketTransportNotReady(TrackerException):
     def __init__(self):
         super().__init__("UDP socket transport is not ready yet")
+
+
+class TooManyDHTRequestsError(TrackerException):
+    def __init__(self):
+        super().__init__("Cannot reserve a free transaction id")

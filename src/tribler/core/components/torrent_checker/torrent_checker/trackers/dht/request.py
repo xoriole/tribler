@@ -76,3 +76,4 @@ class DhtHealthRequest(NumberCache):
 
         health_info = self.get_health_info()
         self.response_future.set_result(health_info)
+        print(f"num responses collected: {self.num_responses_collected}")

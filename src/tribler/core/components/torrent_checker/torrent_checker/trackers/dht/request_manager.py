@@ -107,6 +107,7 @@ class DhtRequestManager(RequestCache):
 
     def max_nodes_requested(self, infohash):
         sent_nodes = self.infohash_to_nodes.get(infohash, [])
+        print(f"nodes sent so far: {len(sent_nodes)}")
         return len(sent_nodes) >= MAX_NODES_TO_REQUEST
 
     def max_response_received(self, infohash):

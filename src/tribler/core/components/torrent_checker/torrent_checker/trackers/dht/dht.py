@@ -6,6 +6,7 @@ from tribler.core.components.torrent_checker.torrent_checker.dataclasses import 
 from tribler.core.components.torrent_checker.torrent_checker.socket_manager import UdpTrackerDataProtocol
 from tribler.core.components.torrent_checker.torrent_checker.trackers import Tracker
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.dht_response import DhtResponse
+from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.protocol import DhtProtocol
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.request import DhtHealthRequest
 from tribler.core.components.torrent_checker.torrent_checker.trackers.dht.request_manager import DhtRequestManager
 
@@ -42,6 +43,7 @@ class DHTTracker(Tracker):
         self.proxy = proxy
 
         self.request_manager = DhtRequestManager()
+        self.protocol = DhtProtocol(self.socket_mgr, proxy)
 
     def init(self, udp_socket_server: UdpTrackerDataProtocol):
         pass
@@ -59,6 +61,10 @@ class DHTTracker(Tracker):
         """
         return not tracker_url or tracker_url.lower().startswith("dht")
 
+    async def get_health_async(self, infohash) -> HealthInfo:
+        health_request = await self.protocol.do_health_request(infohash)
+        return await health_request.future
+
     async def get_torrent_health(self, infohash, tracker_url, timeout=5) -> HealthInfo:
         if self.request_manager.request_exists(infohash):
             return await self.request_manager.get_request(infohash).response_future
@@ -70,7 +76,8 @@ class DHTTracker(Tracker):
         # We can only check one infohash at a time so, we collect all co-routines and send the responses
         torrent_health_list = []
         for infohash in infohashes:
-            health_info = await self.get_torrent_health(infohash, None, timeout=timeout)
+            # health_info = await self.get_torrent_health(infohash, None, timeout=timeout)
+            health_info = await self.get_health_async(infohash)
             torrent_health_list.append(health_info)
 
         return TrackerResponse('DHT', torrent_health_list)
