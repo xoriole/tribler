@@ -92,7 +92,7 @@ class RESTManager:
         self.config = config
         self.state_dir = state_dir
 
-        self.http_host = '127.0.0.1'
+        self.http_host = '0.0.0.0'
         self.https_host = '0.0.0.0'
         self.shutdown_timeout = shutdown_timeout
 
