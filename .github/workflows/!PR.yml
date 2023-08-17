@@ -116,7 +116,7 @@ jobs:
   pytest:
     needs: [ changes, gatekeeper, env ]
 #    if: ${{needs.changes.outputs.src == 'true' && github.event.pull_request.draft}}
-    uses: ./.github/workflows/pytest.yml
+    uses: ./.github/workflows/pytest-self-hosted.yml
     secrets:
       PYTEST_SENTRY_DSN: ${{secrets.PYTEST_SENTRY_DSN}}
     with:

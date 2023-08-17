@@ -1,0 +1,82 @@
+name: Pytest
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        default: 3.8
+        type: string
+        required: false
+
+      matrix:
+        default: '{"os":["windows-latest", "macos-latest", "ubuntu-latest"]}'
+        type: string
+        required: false
+
+      ref:
+        default: ${{ github.ref }}
+        type: string
+        required: false
+
+    secrets:
+      PYTEST_SENTRY_DSN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(inputs.matrix)}}
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      PYTEST_SENTRY_DSN: ${{secrets.PYTEST_SENTRY_DSN}}
+
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{inputs.ref}}
+
+      - name: Create python environment
+        uses: ./.github/actions/pyenv
+        with:
+          python-version: ${{inputs.python-version}}
+          requirements: requirements-test.txt
+          custom_cache_key_element: ${{inputs.ref}}
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/windows_dependencies
+
+      - name: Export env
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: ./.github/workflows/vars/pytest.env
+          expand: true
+
+      - name: Run Pytest (Win)
+        if: runner.os == 'Windows'
+        run: |
+          pytest ${PYTEST_CORE_ARGUMENTS_WIN}
+          pytest ${PYTEST_TUNNELS_ARGUMENTS_WIN}
+
+      - name: Run Pytest (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pytest ${PYTEST_CORE_ARGUMENTS_LINUX}
+          pytest ${PYTEST_TUNNELS_ARGUMENTS_LINUX}
+
+      - name: Run Pytest (Mac)
+        if: runner.os == 'macOS'
+        run: |
+          pytest ${PYTEST_CORE_ARGUMENTS_MAC}
+          pytest ${PYTEST_TUNNELS_ARGUMENTS_MAC}
