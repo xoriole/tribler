@@ -121,7 +121,7 @@ jobs:
       PYTEST_SENTRY_DSN: ${{secrets.PYTEST_SENTRY_DSN}}
     with:
       python-version: ${{needs.env.outputs.python-version}}
-      matrix: '{"os": ["windows-latest", "macos-latest"]}'
+      matrix: '{"os": ["windows-latest", "macos-latest", "self-hosted"]}'
       ref: ${{needs.env.outputs.source-ref}}
 
 #  guitest_nix:
