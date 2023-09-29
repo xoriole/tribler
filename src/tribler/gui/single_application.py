@@ -1,7 +1,9 @@
 # Copied and modified from http://stackoverflow.com/a/12712362/605356
 
 import logging
+import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 from PyQt5.QtCore import QTextStream, pyqtSignal
@@ -30,7 +32,7 @@ class QtSingleApplication(QApplication):
         self.tribler_window: Optional[TriblerWindow] = None
 
         self._id = win_id
-        self._socket_path = get_root_state_directory() / "gui.pid"
+        self._socket_path = self.get_socket_path()
 
         # Is there another instance running?
         self._outgoing_connection = QLocalSocket()
@@ -72,6 +74,14 @@ class QtSingleApplication(QApplication):
 
     def get_id(self):
         return self._id
+
+    def get_socket_path(self):
+        if os.environ.get('FLATPAK_ID', None) == 'org.tribler.Tribler':
+            runtime_dir = os.environ.get('XDG_RUNTIME_DIR', '/tmp')
+            socket_name = os.path.join(runtime_dir, 'tribler.sock')
+            return Path(socket_name)
+        else:
+            return get_root_state_directory() / "tribler.sock"
 
     def send_message(self, msg):
         self.logger.info(f'Send message: {msg}')
