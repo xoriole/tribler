@@ -65,11 +65,14 @@ class EventRequestManager(QNetworkAccessManager):
         notifier.add_observer(notifications.tribler_shutdown_state, self.on_tribler_shutdown_state)
         notifier.add_observer(notifications.report_config_error, self.on_report_config_error)
 
-    def create_request(self) -> QNetworkRequest:
+    def get_url(self):
         if not self.api_port:
             raise RuntimeError("Can't create a request: api_port is not set")
 
-        url = QUrl(f"http://localhost:{self.api_port}/events")
+        return QUrl(f"http://localhost:{self.api_port}/events")
+
+    def create_request(self) -> QNetworkRequest:
+        url = self.get_url()
         request = QNetworkRequest(url)
         request.setRawHeader(b'X-Api-Key', self.api_key.encode('ascii'))
         return request
@@ -134,11 +137,11 @@ class EventRequestManager(QNetworkAccessManager):
             # In the future, if we consider it useful, we can immediately call here
             # `self.reconnect(reschedule_on_err=False)`
             # and raise an exception if it fails to reconnect
-            raise CoreConnectionError('The connection to the Tribler Core was lost')
+            raise CoreConnectionError(f'The connection to the Tribler Core (${self.get_url()}) was lost')
 
         should_retry = reschedule_on_err and time.time() < self.start_time + CORE_CONNECTION_TIMEOUT
         error_name = self.network_errors.get(error, error)
-        self._logger.info(f"Error {error_name} while trying to connect to Tribler Core"
+        self._logger.info(f"Error {error_name} while trying to connect to Tribler Core (${self.get_url()}) "
                           + (', will retry' if should_retry else ', will not retry'))
 
         if reschedule_on_err:
@@ -201,7 +204,8 @@ class EventRequestManager(QNetworkAccessManager):
         self._connect_to_core(reschedule_on_err)
 
     def _connect_to_core(self, reschedule_on_err):
-        self._logger.info(f"Connecting to events endpoint ({'with' if reschedule_on_err else 'without'} retrying)")
+        self._logger.info(f"Connecting to events endpoint at {self.get_url()} "
+                          f"({'with' if reschedule_on_err else 'without'} retrying)")
         if self.reply is not None:
             self.reply.deleteLater()
 
