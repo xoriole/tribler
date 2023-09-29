@@ -8,6 +8,7 @@ from PyQt5.QtCore import QTextStream, pyqtSignal
 from PyQt5.QtNetwork import QLocalServer, QLocalSocket
 from PyQt5.QtWidgets import QApplication
 
+from tribler.core.utilities.osutils import get_root_state_directory
 from tribler.gui.tribler_window import TriblerWindow
 from tribler.gui.utilities import connect, disconnect
 
@@ -29,10 +30,11 @@ class QtSingleApplication(QApplication):
         self.tribler_window: Optional[TriblerWindow] = None
 
         self._id = win_id
+        self._socket_path = get_root_state_directory() / "gui.pid"
 
         # Is there another instance running?
         self._outgoing_connection = QLocalSocket()
-        self._outgoing_connection.connectToServer(self._id)
+        self._outgoing_connection.connectToServer(str(self._socket_path))
 
         self.connected_to_previous_instance = self._outgoing_connection.waitForConnected()
 
@@ -54,7 +56,7 @@ class QtSingleApplication(QApplication):
                 self.cleanup_crashed_server()
             self._outgoing_connection = None
             self._server = QLocalServer()
-            self._server.listen(self._id)
+            self._server.listen(str(self._socket_path))
             connect(self._server.newConnection, self._on_new_connection)
 
     def cleanup_crashed_server(self):
