@@ -64,7 +64,7 @@ def run_gui(api_port: Optional[int], api_key: Optional[str], root_state_dir, par
         translator = get_translator(settings.value('translation', None))
         app.installTranslator(translator)
 
-        if not current_process_is_primary:
+        if not current_process_is_primary or app.connected_to_previous_instance:
             logger.info('GUI Application is already running.')
             app.send_torrent_file_path_to_primary_process()
             logger.info('Close the current GUI application.')
