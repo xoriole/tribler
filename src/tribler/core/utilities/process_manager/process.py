@@ -150,6 +150,7 @@ class TriblerProcess:
         with self.manager.connect():
             # for a new process object self.rowid is None
             primary_rowid = self.manager.primary_process_rowid(self.kind)
+            print(f"Primary row id for kind:{self.kind} is {primary_rowid}")
             if primary_rowid is None or primary_rowid == self.rowid:
                 self.primary = True
             else:
@@ -175,6 +176,9 @@ class TriblerProcess:
         psutil_process_create_time = int(psutil_process.create_time())
         if psutil_process_create_time > self.started_at:
             # The same PID value was reused for a new process, so the previous process is not running anymore
+            return False
+
+        if not self.is_api_port_in_connections():
             return False
 
         return True
@@ -253,3 +257,10 @@ class TriblerProcess:
             if len(rows) > 1:  # should not happen
                 raise RuntimeError('Multiple Core processes were found for a single GUI process')
             return TriblerProcess.from_row(self.manager, rows[0]) if rows else None
+
+    def is_api_port_in_connections(self):
+        ports = set()
+        for c in psutil.net_connections():
+            if c.status == 'LISTEN' and c.pid == self.pid:
+                ports.add(c.laddr[1])
+        return self.api_port in ports
