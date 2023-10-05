@@ -18,6 +18,7 @@ from tribler.core.components.gigachannel.gigachannel_component import GigaChanne
 from tribler.core.components.gigachannel_manager.gigachannel_manager_component import GigachannelManagerComponent
 from tribler.core.components.gui_process_watcher.gui_process_watcher import GuiProcessWatcher
 from tribler.core.components.gui_process_watcher.gui_process_watcher_component import GuiProcessWatcherComponent
+from tribler.core.components.gui_socket.gui_socket_component import GuiSocketComponent
 from tribler.core.components.ipv8.ipv8_component import Ipv8Component
 from tribler.core.components.key.key_component import KeyComponent
 from tribler.core.components.knowledge.knowledge_component import KnowledgeComponent
@@ -55,6 +56,7 @@ def components_gen(config: TriblerConfig):
     """
     yield ReporterComponent()
     yield GuiProcessWatcherComponent()
+    yield GuiSocketComponent()
     yield RESTComponent()
     if config.chant.enabled or config.torrent_checking.enabled:
         yield MetadataStoreComponent()

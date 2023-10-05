@@ -8,6 +8,7 @@ from aiohttp.web_exceptions import HTTPNotFound, HTTPRequestEntityTooLarge
 from aiohttp_apispec import AiohttpApiSpec
 from apispec.core import VALID_METHODS_OPENAPI_V2
 
+from tribler.core import notifications
 from tribler.core.components.reporter.exception_handler import default_core_exception_handler
 from tribler.core.components.restapi.rest.rest_endpoint import (
     HTTP_INTERNAL_SERVER_ERROR,
@@ -20,6 +21,7 @@ from tribler.core.components.restapi.rest.rest_endpoint import (
 from tribler.core.components.restapi.rest.root_endpoint import RootEndpoint
 from tribler.core.components.restapi.rest.settings import APISettings
 from tribler.core.utilities.network_utils import default_network_utils
+from tribler.core.utilities.notifier import Notifier
 from tribler.core.utilities.process_manager import get_global_process_manager
 from tribler.core.version import version_id
 
@@ -85,7 +87,8 @@ class RESTManager:
     This class is responsible for managing the startup and closing of the Tribler HTTP API.
     """
 
-    def __init__(self, config: APISettings, root_endpoint: RootEndpoint, state_dir=None, shutdown_timeout: int = 10):
+    def __init__(self, config: APISettings, root_endpoint: RootEndpoint, state_dir=None, shutdown_timeout: int = 10,
+                 notifier: Notifier = None):
         super().__init__()
         self._logger = logging.getLogger(self.__class__.__name__)
         self.root_endpoint = root_endpoint
@@ -98,6 +101,7 @@ class RESTManager:
         self.http_host = '127.0.0.1'
         self.https_host = '0.0.0.0'
         self.shutdown_timeout = shutdown_timeout
+        self.notifier = notifier
 
     def get_endpoint(self, name):
         return self.root_endpoint.endpoints.get('/' + name)
@@ -111,6 +115,8 @@ class RESTManager:
         process_manager = get_global_process_manager()
         if process_manager:
             process_manager.current_process.set_api_port(api_port)
+
+        self.notifier[notifications.rest_api_started](api_port)
 
     async def start(self):
         """

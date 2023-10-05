@@ -60,6 +60,10 @@ def events_start(public_key: str, version: str):
     ...
 
 
+def rest_api_started(api_port: int):
+    ...
+
+
 def tribler_exception(error: dict):
     ...
 

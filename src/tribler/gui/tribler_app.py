@@ -34,10 +34,16 @@ class TriblerApplication(QtSingleApplication):
     def on_app_message(self, msg):
         if msg.startswith('file') or msg.startswith('magnet'):
             self.handle_uri(msg)
+        if msg.startswith('data'):
+            self.handle_event(msg)
 
     def handle_uri(self, uri):
         if self.tribler_window:
             self.tribler_window.handle_uri(uri)
+
+    def handle_event(self, event):
+        if self.tribler_window:
+            self.tribler_window.handle_event(event)
 
     def parse_sys_args(self, args):
         for arg in args[1:]:

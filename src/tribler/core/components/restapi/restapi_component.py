@@ -135,7 +135,8 @@ class RESTComponent(Component):
             self.root_endpoint.add_endpoint('/ipv8', ipv8_root_endpoint)
 
         # Note: AIOHTTP endpoints cannot be added after the app has been started!
-        rest_manager = RESTManager(config=config.api, root_endpoint=self.root_endpoint, state_dir=config.state_dir)
+        rest_manager = RESTManager(config=config.api, root_endpoint=self.root_endpoint, state_dir=config.state_dir,
+                                   notifier=notifier)
         await rest_manager.start()
         self.rest_manager = rest_manager
 

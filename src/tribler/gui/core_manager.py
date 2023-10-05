@@ -89,13 +89,7 @@ class CoreManager(QObject):
             self.upgrade_manager = upgrade_manager
 
         # Connect to the events manager
-        if self.events_manager.api_port:
-            self.events_manager.connect_to_core(
-                reschedule_on_err=False  # do not retry if tribler Core is not running yet
-            )
-            connect(self.events_manager.reply.error, self.do_upgrade_and_start_core)
-        else:
-            self.do_upgrade_and_start_core()
+        self.do_upgrade_and_start_core()
 
     def do_upgrade_and_start_core(self, _=None):
         if self.upgrade_manager:
@@ -161,13 +155,6 @@ class CoreManager(QObject):
             if api_port != self.api_port:
                 self.api_port = api_port
                 request_manager.set_api_port(api_port)
-                self.events_manager.set_api_port(api_port)
-
-            # Previously it was necessary to reschedule on error because `events_manager.connect_to_core()` was executed
-            # before the REST API was available, so it retried until the REST API was ready. Now the API is ready
-            # to use when we can read the api_port value from the database, so now we can call connect_to_core
-            # with reschedule_on_err=False. I kept reschedule_on_err=True just for reinsurance.
-            self.events_manager.connect_to_core(reschedule_on_err=True)
 
         elif time.time() - self.core_started_at > API_PORT_CHECK_TIMEOUT:
             raise CoreConnectTimeoutError(f"Can't get Core API port value within {API_PORT_CHECK_TIMEOUT} seconds")
@@ -295,12 +282,6 @@ class CoreManager(QObject):
         else:
             error_message = self.format_error_message(exit_code, exit_status)
             self._logger.warning(error_message)
-
-            if not self.app_manager.quitting_app:
-                # Stop the event manager loop if it is running
-                if self.events_manager.connect_timer and self.events_manager.connect_timer.isActive():
-                    self.events_manager.connect_timer.stop()
-
             raise CoreCrashedError(error_message)
 
     @staticmethod

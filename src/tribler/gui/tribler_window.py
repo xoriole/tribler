@@ -199,7 +199,7 @@ class TriblerWindow(QMainWindow):
         self.core_env = core_env
 
         self.error_handler = ErrorHandler(self)
-        self.events_manager = EventRequestManager(api_port, api_key, self.error_handler)
+        self.events_manager = EventRequestManager(self.error_handler)
         self.core_manager = CoreManager(self.root_state_dir, api_port, api_key,
                                         app_manager, process_manager, self.events_manager)
         self.version_history = VersionHistory(self.root_state_dir)
@@ -349,6 +349,7 @@ class TriblerWindow(QMainWindow):
         connect(self.core_manager.events_manager.torrent_finished, self.on_torrent_finished)
         connect(self.core_manager.events_manager.new_version_available, self.on_new_version_available)
         connect(self.core_manager.events_manager.core_connected, self.on_core_connected)
+        connect(self.core_manager.events_manager.core_port_known, self.on_core_port_known)
         connect(self.core_manager.events_manager.low_storage_signal, self.on_low_storage)
         connect(self.core_manager.events_manager.tribler_shutdown_signal, self.on_tribler_shutdown_state_update)
         connect(self.core_manager.events_manager.config_error_signal, self.on_config_error_signal)
@@ -548,6 +549,9 @@ class TriblerWindow(QMainWindow):
         self._logger.info("Core connected")
         self.tribler_started = True
         self.tribler_version = version
+
+    def on_core_port_known(self, api_port):
+        request_manager.set_api_port(api_port)
 
         request_manager.get("settings", self.on_receive_settings, capture_errors=False)
 
@@ -1254,3 +1258,8 @@ class TriblerWindow(QMainWindow):
         self.pending_uri_requests.append(uri)
         if self.tribler_started and not self.start_download_dialog_active:
             self.process_uri_request()
+
+    def handle_event(self, event):
+        if self.events_manager:
+            self.events_manager.process_event(event)
+
