@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 gui_socket_manager = None
 
 
-class GuiSocketManager(TaskManager, ABC):
+class GuiSocketManager(ABC):
 
     def __init__(self):
         super().__init__()
@@ -26,7 +26,6 @@ class GuiSocketManager(TaskManager, ABC):
 
     async def stop(self):
         self.close_socket()
-        await self.shutdown_task_manager()
 
     def is_connected(self):
         return self._connected
