@@ -1,6 +1,6 @@
 import shutil
 from asyncio import CancelledError
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 from aiohttp import ServerDisconnectedError
@@ -48,7 +48,7 @@ async def rest_manager_fixture(request, tribler_config, api_port, tmp_path):
         tribler_config.api.http_port = api_port
     root_endpoint = RootEndpoint(middlewares=[ApiKeyMiddleware(config.api.key), error_middleware])
     root_endpoint.add_endpoint('/settings', SettingsEndpoint(config))
-    rest_manager = RESTManager(config=config.api, root_endpoint=root_endpoint, state_dir=tmp_path)
+    rest_manager = RESTManager(config=config.api, root_endpoint=root_endpoint, state_dir=tmp_path, notifier=MagicMock())
     await rest_manager.start()
     yield rest_manager
     await rest_manager.stop()

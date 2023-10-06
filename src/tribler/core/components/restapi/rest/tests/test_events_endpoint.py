@@ -54,7 +54,7 @@ async def fixture_rest_manager(api_port, tmp_path, events_endpoint):
     config.api.http_port = api_port
     root_endpoint = RootEndpoint(middlewares=[ApiKeyMiddleware(config.api.key), error_middleware])
     root_endpoint.add_endpoint('/events', events_endpoint)
-    rest_manager = RESTManager(config=config.api, root_endpoint=root_endpoint, state_dir=tmp_path)
+    rest_manager = RESTManager(config=config.api, root_endpoint=root_endpoint, state_dir=tmp_path, notifier=MagicMock())
 
     await rest_manager.start()
     yield rest_manager
