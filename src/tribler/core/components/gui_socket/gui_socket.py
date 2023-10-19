@@ -1,9 +1,15 @@
+import dataclasses
+import json
 import logging
+import os
 import socket
 import sys
+import uuid
 from abc import ABC
 
 from ipv8.taskmanager import TaskManager
+
+from tribler.core.components.gui_socket.messages import ConnectRequest
 
 CHECK_INTERVAL = 10
 
@@ -20,6 +26,7 @@ class GuiSocketManager(ABC):
         super().__init__()
         self.client_socket = None
         self._connected = False
+        self._uuid = str(uuid.uuid4())
 
     def start(self):
         self.connect_gui_socket()
@@ -41,6 +48,15 @@ class GuiSocketManager(ABC):
 
     def send_message(self, message: bytes):
         raise NotImplementedError()
+
+    def send_connect_request(self):
+        connect_request = ConnectRequest(
+            msg_id=1,
+            uuid=self._uuid,
+            process='CORE',
+            pid=os.getpid()
+        )
+        self.send_message(json.dumps(dataclasses.asdict(connect_request)).encode('utf-8'))
 
 
 if sys.platform.startswith("win"):
@@ -90,10 +106,14 @@ else:  # For Linux and macOS
                 self.client_socket.connect(self.get_socket_path())
                 logger.info('Socket connected')
                 self._connected = True
+                self.on_connected()
 
         def close_socket(self):
             if self.client_socket:
                 self.client_socket.close()
+
+        def on_connected(self):
+            self.send_connect_request()
 
         def send_message(self, message: bytes):
             if self.client_socket is None:

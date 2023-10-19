@@ -50,4 +50,7 @@ class QtSingleApplication(QApplication):
         return self.client_socket.send_message(msg)
 
     def on_message_received(self, msg):
+        print(f"on message received: {msg}")
+        sender = self.local_server.sender()
+        print(f"sender: {sender}")
         self.message_received.emit(msg)
