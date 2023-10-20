@@ -1,6 +1,6 @@
 import logging
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, QByteArray
 from PyQt5.QtNetwork import QLocalServer
 
 from tribler.core.components.gui_socket.interface import SocketServer
@@ -24,17 +24,44 @@ class GUISocketServer(QObject, SocketServer):
     def listen(self):
         self.local_server = QLocalServer()
         self.local_server.listen(self.socket_id)
-        connect(self.local_server.newConnection, self.on_client_connected)
+        connect(self.local_server.newConnection, self.handle_new_connection)
 
-    def on_client_connected(self):
-        socket = self.local_server.nextPendingConnection()
-        if not socket:
+    def read_client_data(self):
+        client_socket = self.local_server.sender()
+        if client_socket not in self.connections:
             return
 
-        client_socket = ClientConnection(socket)
-        connect(client_socket.message_received, self.on_message_received)
+        while True:
+            data: QByteArray = client_socket.readLine()
+            if not data:
+                break
+
+            data: bytes = data.data().strip()
+
+            self.protocol_server.handle_data(data)
+            self.message_received.emit(data.decode('utf-8'))
+
+    def handle_new_connection(self):
+        client_socket = self.local_server.nextPendingConnection()
+        if not client_socket:
+            return
+
+        # Store the client socket in the connections list
         self.connections.append(client_socket)
 
-    def on_message_received(self, msg):
-        self.message_received.emit(msg)
-        self.protocol_server.handle_message(msg)
+        # Connect the socket's disconnected signal to handle its removal
+        client_socket.disconnected.connect(self.remove_connection)
+
+        # Read the data
+        client_socket.readyRead.connect(self.read_client_data)
+
+    # def on_message_received(self, msg):
+    #     self.message_received.emit(msg)
+    #     self.protocol_server.handle_message(msg)
+
+    def remove_connection(self):
+        # Remove the socket from the connections list
+        client_socket = self.local_server.sender()
+        if client_socket in self.connections:
+            self.connections.remove(client_socket)
+            client_socket.deleteLater()

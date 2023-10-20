@@ -98,7 +98,13 @@ class EventRequestManager(QObject):
 
     def process_event(self, event: str):
         event = event[5:] if event.startswith('data:') else event
-        json_dict = json.loads(event)
+        # TODO: check for json.decoder.JSONDecodeError
+        try:
+            print(f"event:|{event}|")
+            json_dict = json.loads(event.strip())
+        except json.decoder.JSONDecodeError as json_error:
+            self._logger.error(f"Event: |{event}|\nError: {json_error}")
+            return
 
         received_events.insert(0, (json_dict, time.time()))
         if len(received_events) > 100:  # Only buffer the last 100 events

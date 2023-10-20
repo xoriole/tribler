@@ -7,11 +7,10 @@ import sys
 import uuid
 from abc import ABC
 
-from ipv8.taskmanager import TaskManager
-
 from tribler.core.components.gui_socket.messages import ConnectRequest
 from tribler.core.components.gui_socket.protocol import BaseMessage
 from tribler.core.components.gui_socket.protocol_client import ProtocolClient
+from tribler.core.utilities.process_manager import ProcessKind
 
 CHECK_INTERVAL = 10
 
@@ -28,8 +27,9 @@ class GuiSocketManager(ABC):
         super().__init__()
         self.client_socket = None
         self._connected = False
-        self._uuid = str(uuid.uuid4())
-        self.protocol = ProtocolClient(self._uuid, self)
+        self._uid = str(uuid.uuid4())
+        self._kind = ProcessKind.Core.name
+        self.protocol = ProtocolClient(self._uid, self)
 
     def start(self):
         self.connect_gui_socket()
@@ -53,16 +53,23 @@ class GuiSocketManager(ABC):
         raise NotImplementedError()
 
     def send_message(self, message: BaseMessage):
-        self.send_data(json.dumps(message).encode('utf-8'))
+        message_str = json.dumps(message) + '\n\n'
+        self.send_data(message_str.encode('utf-8'))
 
     def send_connect_request(self):
         connect_request = ConnectRequest(
             msg_id=1,
-            uuid=self._uuid,
+            uuid=self._uid,
             process='CORE',
             pid=os.getpid()
         )
         self.send_data(json.dumps(dataclasses.asdict(connect_request)).encode('utf-8'))
+
+    def send_port_info(self, port: int):
+        self.protocol.gui_send_port_info(self._uid, port)
+
+    def send_event(self, event: str):
+        self.protocol.gui_send_event(self._uid, event)
 
 
 if sys.platform.startswith("win"):
@@ -70,6 +77,10 @@ if sys.platform.startswith("win"):
     import pywintypes
 
     class WinGuiSocketManager(GuiSocketManager):
+
+        def __init__(self):
+            super().__init__()
+
         def get_socket_path(self):
             return WIN_SOCKET_PATH
 
@@ -103,6 +114,9 @@ if sys.platform.startswith("win"):
 else:  # For Linux and macOS
     class UnixGuiSocketManager(GuiSocketManager):
 
+        def __init__(self):
+            super().__init__()
+
         def get_socket_path(self):
             return UNIX_SOCKET_PATH
 
@@ -119,7 +133,8 @@ else:  # For Linux and macOS
                 self.client_socket.close()
 
         def on_connected(self):
-            self.send_connect_request()
+            # self.send_connect_request()
+            self.protocol.gui_register(self._uid, self._kind)
 
         def send_data(self, data: bytes):
             if self.client_socket is None:

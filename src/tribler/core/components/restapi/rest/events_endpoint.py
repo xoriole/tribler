@@ -63,6 +63,7 @@ class EventsEndpoint(RESTEndpoint):
 
         self.gui_socket_manager: GuiSocketManager = gui_socket_manager
         self.gui_socket_manager.send_data(self.encode_message(self.initial_message()))
+        self.gui_socket_manager.send_connect_request()
 
     def on_notification(self, topic, *args, **kwargs):
         if topic in topics_to_send_to_gui:
