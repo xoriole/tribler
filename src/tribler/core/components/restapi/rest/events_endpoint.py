@@ -62,7 +62,7 @@ class EventsEndpoint(RESTEndpoint):
         notifier.add_generic_observer(self.on_notification)
 
         self.gui_socket_manager: GuiSocketManager = gui_socket_manager
-        self.gui_socket_manager.send_message(self.encode_message(self.initial_message()))
+        self.gui_socket_manager.send_data(self.encode_message(self.initial_message()))
 
     def on_notification(self, topic, *args, **kwargs):
         if topic in topics_to_send_to_gui:
@@ -142,7 +142,7 @@ class EventsEndpoint(RESTEndpoint):
         self._logger.debug(f'Write message: {message}')
         try:
             message_bytes = self.encode_message(message)
-            self.gui_socket_manager.send_message(message_bytes)
+            self.gui_socket_manager.send_data(message_bytes)
         except Exception as e:  # pylint: disable=broad-except
             # if a notification arguments contains non-JSON-serializable data, the exception should be logged
             self._logger.exception(e)

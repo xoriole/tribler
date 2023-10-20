@@ -10,6 +10,8 @@ from abc import ABC
 from ipv8.taskmanager import TaskManager
 
 from tribler.core.components.gui_socket.messages import ConnectRequest
+from tribler.core.components.gui_socket.protocol import BaseMessage
+from tribler.core.components.gui_socket.protocol_client import ProtocolClient
 
 CHECK_INTERVAL = 10
 
@@ -27,6 +29,7 @@ class GuiSocketManager(ABC):
         self.client_socket = None
         self._connected = False
         self._uuid = str(uuid.uuid4())
+        self.protocol = ProtocolClient(self._uuid, self)
 
     def start(self):
         self.connect_gui_socket()
@@ -46,8 +49,11 @@ class GuiSocketManager(ABC):
     def close_socket(self):
         raise NotImplementedError()
 
-    def send_message(self, message: bytes):
+    def send_data(self, data: bytes):
         raise NotImplementedError()
+
+    def send_message(self, message: BaseMessage):
+        self.send_data(json.dumps(message).encode('utf-8'))
 
     def send_connect_request(self):
         connect_request = ConnectRequest(
@@ -56,7 +62,7 @@ class GuiSocketManager(ABC):
             process='CORE',
             pid=os.getpid()
         )
-        self.send_message(json.dumps(dataclasses.asdict(connect_request)).encode('utf-8'))
+        self.send_data(json.dumps(dataclasses.asdict(connect_request)).encode('utf-8'))
 
 
 if sys.platform.startswith("win"):
@@ -87,9 +93,9 @@ if sys.platform.startswith("win"):
             if self.client_socket:
                 win32file.CloseHandle(self.client_socket)
 
-        def send_message(self, message: bytes):
+        def send_data(self, data: bytes):
             if self.client_socket:
-                win32file.WriteFile(self.client_socket, message)
+                win32file.WriteFile(self.client_socket, data)
 
 
     gui_socket_manager = WinGuiSocketManager()
@@ -115,12 +121,12 @@ else:  # For Linux and macOS
         def on_connected(self):
             self.send_connect_request()
 
-        def send_message(self, message: bytes):
+        def send_data(self, data: bytes):
             if self.client_socket is None:
-                logger.warning(f"GUI socket is not connected. Cannot send message: {message}")
+                logger.warning(f"GUI socket is not connected. Cannot send message: {data}")
                 return
 
-            self.client_socket.sendall(message)
+            self.client_socket.sendall(data)
 
     gui_socket_manager = UnixGuiSocketManager()
 
