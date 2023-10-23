@@ -8,12 +8,13 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QApplication
 
 from tribler.gui.socket.client import GUISocketClient
+from tribler.gui.socket.protocol_server import SocketEventListener
 from tribler.gui.socket.server import GUISocketServer
 from tribler.gui.tribler_window import TriblerWindow
 from tribler.gui.utilities import connect
 
 
-class QtSingleApplication(QApplication):
+class QtSingleApplication(QApplication, SocketEventListener):
     """
     This class makes sure that we can only start one Tribler application.
     When a user tries to open a second Tribler instance, the current active one will be brought to front.
@@ -39,7 +40,7 @@ class QtSingleApplication(QApplication):
         if self.client_socket.is_connected:
             self.connected_to_previous_instance = True
         elif start_local_server:
-            self.local_server = GUISocketServer(self._id)
+            self.local_server = GUISocketServer(self._id, self)
             self.local_server.listen()
             connect(self.local_server.message_received, self.on_message_received)
 
@@ -54,3 +55,19 @@ class QtSingleApplication(QApplication):
         sender = self.local_server.sender()
         print(f"sender: {sender}")
         self.message_received.emit(msg)
+
+    def on_core_registered(self, uid: str, kind: str):
+        ...
+
+    def on_event_received(self, uid: str, event: str):
+        self.logger.info(f"{uid}:{event}")
+        self.tribler_window.events_manager.process_event(event)
+
+    def on_port_info_received(self, uid: str, port: int):
+        ...
+
+    def on_command_args_received(self, uid: str, args: list):
+        ...
+
+    def on_data_received(self, uid: str, data: bytes):
+        ...

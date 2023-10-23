@@ -5,21 +5,21 @@ from PyQt5.QtNetwork import QLocalServer
 
 from tribler.core.components.gui_socket.interface import SocketServer
 from tribler.gui.socket.connection import ClientConnection
-from tribler.gui.socket.protocol_server import ProtocolServer
+from tribler.gui.socket.protocol_server import ProtocolServer, SocketEventListener
 from tribler.gui.utilities import connect
 
 
 class GUISocketServer(QObject, SocketServer):
     message_received = pyqtSignal(str)
 
-    def __init__(self, socket_id: str):
+    def __init__(self, socket_id: str, event_listener: SocketEventListener):
         self.logger = logging.getLogger(self.__class__.__name__)
         super().__init__()
         self.socket_id = socket_id
         self.local_server = None
         self.connections = []
 
-        self.protocol_server = ProtocolServer(self)
+        self.protocol_server = ProtocolServer(self, event_listener)
 
     def listen(self):
         self.local_server = QLocalServer()

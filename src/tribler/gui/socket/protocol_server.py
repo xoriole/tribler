@@ -1,17 +1,37 @@
 import json
 
 from tribler.core.components.gui_socket.protocol import Protocol, BaseMessage
+from tribler.gui.tribler_window import TriblerWindow
 
 PREFIXES = [
     "data: "
 ]
 
 
+class SocketEventListener:
+
+    def on_core_registered(self, uid: str, kind: str):
+        ...
+
+    def on_event_received(self, uid: str, event: str):
+        ...
+
+    def on_port_info_received(self, uid: str, port: int):
+        ...
+
+    def on_command_args_received(self, uid: str, args: list):
+        ...
+
+    def on_data_received(self, uid: str, data: bytes):
+        ...
+
+
 class ProtocolServer(Protocol):
 
-    def __init__(self, socket_server):
+    def __init__(self, socket_server, event_listener: SocketEventListener):
         self.socket_server = socket_server
         self.clients = {}
+        self.event_listener = event_listener
 
     def _prepare_for_parsing(self, data: bytes):
         data = data.decode('utf-8').strip()
@@ -56,17 +76,18 @@ class ProtocolServer(Protocol):
         return True
 
     def gui_send_event(self, uid: str, event: str):
-        print(f"calling gui_send_events with uid: {uid}")
+        print(f"calling gui_send_events with uid: {uid}; event: {event}")
+        self.event_listener.on_event_received(uid, event)
         ...
 
     def gui_send_port_info(self, uid: str, port: int):
         print(f"calling gui_send_port_info with uid: {uid}")
-        ...
+        self.event_listener.on_port_info_received(uid, port)
 
     def gui_send_command_args(self, uid: str, args: list):
         print(f"calling gui_send_command_args with uid: {uid}")
-        ...
+        self.event_listener.on_command_args_received(uid, args)
 
     def gui_send_data(self, uid: str, data: bytes):
-        print(f"calling gui_send_data with uid: {uid}")
-        ...
+        print(f"calling gui_send_data with uid: {uid}; data: {data}")
+        self.event_listener.on_data_received(uid, data)

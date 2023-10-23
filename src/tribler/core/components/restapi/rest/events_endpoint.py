@@ -12,7 +12,7 @@ from ipv8.REST.schema import schema
 from ipv8.messaging.anonymization.tunnel import Circuit
 
 from tribler.core import notifications
-from tribler.core.components.gui_socket.gui_socket import gui_socket_manager, GuiSocketManager
+from tribler.core.components.gui_socket.gui_socket import GuiSocketManager, get_socket_manager
 from tribler.core.components.reporter.reported_error import ReportedError
 from tribler.core.components.restapi.rest.rest_endpoint import RESTEndpoint, RESTStreamResponse
 from tribler.core.components.restapi.rest.util import fix_unicode_dict
@@ -61,7 +61,7 @@ class EventsEndpoint(RESTEndpoint):
         notifier.add_observer(notifications.circuit_removed, self.on_circuit_removed)
         notifier.add_generic_observer(self.on_notification)
 
-        self.gui_socket_manager: GuiSocketManager = gui_socket_manager
+        self.gui_socket_manager: GuiSocketManager = get_socket_manager(notifier, self.public_key)
         self.gui_socket_manager.send_data(self.encode_message(self.initial_message()))
         self.gui_socket_manager.send_connect_request()
 
@@ -106,7 +106,7 @@ class EventsEndpoint(RESTEndpoint):
         return b'data: ' + message.encode('utf-8') + b'\n\n'
 
     def has_connection_to_gui(self) -> bool:
-        return bool(self.events_responses) or self.gui_socket_manager.is_connected()
+        return bool(self.events_responses)
 
     def should_skip_message(self, message: MessageDict) -> bool:
         """
@@ -143,7 +143,7 @@ class EventsEndpoint(RESTEndpoint):
         self._logger.debug(f'Write message: {message}')
         try:
             message_bytes = self.encode_message(message)
-            self.gui_socket_manager.send_data(message_bytes)
+            # self.gui_socket_manager.send_data(message_bytes)
         except Exception as e:  # pylint: disable=broad-except
             # if a notification arguments contains non-JSON-serializable data, the exception should be logged
             self._logger.exception(e)
@@ -151,6 +151,7 @@ class EventsEndpoint(RESTEndpoint):
 
         processed_responses = []
         for response in self.events_responses:
+            print(f"response: {response}")
             try:
                 await response.write(message_bytes)
                 # by creating the list with processed responses we want to remove responses with
@@ -214,6 +215,7 @@ class EventsEndpoint(RESTEndpoint):
         self.events_responses.append(response)
 
         try:
+            print("stuck in while loop")
             while not self._shutdown:
                 await asyncio.sleep(1)
         except CancelledError:
@@ -221,6 +223,7 @@ class EventsEndpoint(RESTEndpoint):
         else:
             self._logger.info('Event stream was closed due to shutdown')
         finally:
+            print(f"finally removing the response from events endpoint")
             self.events_responses.remove(response)
 
         return response
