@@ -1,7 +1,10 @@
 import errno
+import json
 import logging
+import os.path
 import re
 import sys
+import traceback
 from io import StringIO
 from socket import gaierror
 from traceback import print_exception
@@ -39,6 +42,17 @@ class NoCrashException(Exception):
     """Raising exceptions of this type doesn't lead to forced Tribler stop"""
 
 
+class DeserializedException(Exception):
+    def __init__(self, exc_type_str, exc_value_str, exc_traceback_str):
+        self.original_type = exc_type_str
+        self.original_traceback = exc_traceback_str
+        super().__init__(f"{exc_type_str}: {exc_value_str}")
+
+    def __str__(self):
+        return f"{self.original_traceback}\n{self.original_type}: {super().__str__()}"
+        # return f"{self.original_type}: {super().__str__()}"
+
+
 class CoreExceptionHandler:
     """
     This class handles Python errors arising in the Core by catching them, adding necessary context,
@@ -50,6 +64,7 @@ class CoreExceptionHandler:
         self.report_callback: Optional[Callable[[ReportedError], None]] = None
         self.unreported_error: Optional[ReportedError] = None
         self.sentry_reporter = SentryReporter()
+        self.load_exceptions()
 
     @staticmethod
     def _get_long_text_from(exception: Exception):
@@ -79,20 +94,41 @@ class CoreExceptionHandler:
         self.logger.warning(text)
         return Exception(text)
 
+    def unhandled_system_error_observer(self, exc_type, exc_value, exc_traceback):
+        print("Unhandled Exception on System Exception Handler:")
+        print(f"+=" * 25)
+        print(traceback.format_exc())
+        print(f"ex type: {exc_type}, value: {exc_value}")
+        exception = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        print(f"exception xxxx: {exception}")
+        print(f"-=" * 25)
+        exception_file = "exceptions.txt"
+        with open(exception_file, 'a') as f:
+            f.write(json.dumps({
+                "type": exc_type.__name__,
+                "message": str(exc_value),
+                "traceback": "".join(exception)
+            }))
+            f.write("\n")
+            f.flush()
+
     def unhandled_error_observer(self, _, context):
         """
         This method is called when an unhandled error in Tribler is observed.
         It broadcasts the tribler_exception event.
         """
         self.logger.info('Processing unhandled error...')
+        self.sentry_reporter.ignore_logger(self.logger.name)
+        context = context.copy()
+        should_stop = context.pop('should_stop', True)
+        message = context.pop('message', 'no message')
+        exception = context.pop('exception', None) or self._create_exception_from(message)
+
+        self.handle_unhandled_exceptions(exception, context, should_stop=should_stop)
+
+    def handle_unhandled_exceptions(self, exception, context, should_stop=True):
         process_manager = get_global_process_manager()
         try:
-            self.sentry_reporter.ignore_logger(self.logger.name)
-
-            context = context.copy()
-            should_stop = context.pop('should_stop', True)
-            message = context.pop('message', 'no message')
-            exception = context.pop('exception', None) or self._create_exception_from(message)
             # Exception
             text = str(exception)
             if isinstance(exception, ComponentStartupException):
@@ -143,6 +179,38 @@ class CoreExceptionHandler:
             self.sentry_reporter.capture_exception(ex)
             self.logger.exception(f'Error occurred during the error handling: {ex}')
             raise ex
+
+    def handle_saved_exception(self, exception_dict):
+        pass
+
+
+    def save_exception(self):
+        print(f"Saving exceptions")
+        if self.unreported_error:
+            with open("exceptions.txt", "a") as f:
+                f.write(f"{json.dumps(self.unreported_error)}\n\n")
+
+    def load_exceptions(self):
+        errors = []
+        exception_file = "exceptions.txt"
+        if os.path.exists(exception_file):
+            with open("exceptions.txt", "r") as f:
+                for exception_line in f:
+                    try:
+                        exception = json.loads(exception_line)
+                        errors.append(exception)
+                        exception['should_stop'] = False
+
+                        deserialized_exception = DeserializedException(
+                            exc_type_str=exception['type'],
+                            exc_value_str=exception['message'],
+                            exc_traceback_str=exception['traceback']
+                        )
+                        self.handle_unhandled_exceptions(deserialized_exception, exception, should_stop=False)
+                        # self.unhandled_error_observer(None, exception)
+                        # self.unreported_error = exception
+                    except json.decoder.JSONDecodeError:
+                        pass
 
 
 default_core_exception_handler = CoreExceptionHandler()

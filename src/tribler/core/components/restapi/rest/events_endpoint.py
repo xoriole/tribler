@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import time
 from asyncio import CancelledError, Queue
 from dataclasses import asdict
@@ -85,10 +86,14 @@ class EventsEndpoint(RESTEndpoint):
         }
 
     def error_message(self, reported_error: ReportedError) -> MessageDict:
-        return {
-            "topic": notifications.tribler_exception.__name__,
-            "kwargs": {"error": asdict(reported_error)},
-        }
+        try:
+            return {
+                "topic": notifications.tribler_exception.__name__,
+                "kwargs": {"error": asdict(reported_error)},
+            }
+        except TypeError:
+            print(f"reported_error:|{reported_error}|")
+            raise
 
     def encode_message(self, message: MessageDict) -> bytes:
         try:
@@ -129,6 +134,8 @@ class EventsEndpoint(RESTEndpoint):
             message = await self.queue.get()
             if not self.should_skip_message(message):
                 await self._write_data(message)
+            # elif message and message.topic == notifications.tribler_exception.__name__:
+            #     self.queue.put_nowait(message)
 
     async def _write_data(self, message: MessageDict):
         """
@@ -157,15 +164,21 @@ class EventsEndpoint(RESTEndpoint):
     # An exception has occurred in Tribler. The event includes a readable
     # string of the error and a Sentry event.
     def on_tribler_exception(self, reported_error: ReportedError):
+        print(f"on tribler exception on events endpoint: {reported_error}")
         if self._shutdown:
             self._logger.warning('Ignoring tribler exception, because the endpoint is shutting down.')
             return
 
         message = self.error_message(reported_error)
+        print(f"message: {message}; reported error: {reported_error}")
+        print(f"has connection to gui: {self.has_connection_to_gui()}")
+        print(f"undelivered error: {self.undelivered_error}")
         if self.has_connection_to_gui():
+            print(f"sending event: {message}")
             self.send_event(message)
-        elif not self.undelivered_error:
+        if not self.undelivered_error:
             # If there are several undelivered errors, we store the first error as more important and skip other
+            print(f"setting undelivered message: {message}")
             self.undelivered_error = message
 
     @docs(
@@ -200,9 +213,12 @@ class EventsEndpoint(RESTEndpoint):
         await response.write(self.encode_message(self.initial_message()))
 
         if self.undelivered_error:
+            print(f"undelivered error exists: {self.undelivered_error}")
             error = self.undelivered_error
             self.undelivered_error = None
             await response.write(self.encode_message(error))
+
+            os.remove("exceptions.txt")
 
         self.events_responses.append(response)
 

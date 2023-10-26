@@ -140,6 +140,7 @@ class RESTComponent(Component):
         self.rest_manager = rest_manager
 
         def report_callback(reported_error: ReportedError):
+            print(f"reported error: {reported_error}")
             self._events_endpoint.on_tribler_exception(reported_error)
 
         self._core_exception_handler.report_callback = report_callback

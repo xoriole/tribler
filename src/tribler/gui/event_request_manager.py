@@ -34,6 +34,7 @@ class EventRequestManager(QNetworkAccessManager):
     tribler_shutdown_signal = pyqtSignal(str)
     change_loading_text = pyqtSignal(str)
     config_error_signal = pyqtSignal(str)
+    tribler_exception_signal = pyqtSignal(object)
 
     def __init__(self, api_port: Optional[int], api_key, error_handler):
         QNetworkAccessManager.__init__(self)
@@ -85,6 +86,9 @@ class EventRequestManager(QNetworkAccessManager):
         self.core_connected.emit(version)
 
     def on_tribler_exception(self, error: dict):
+        print(f"+++" * 25)
+        print(f"exception: {error}")
+        self.tribler_exception_signal.emit(error)
         self.error_handler.core_error(ReportedError(**error))
 
     def on_channel_entity_updated(self, channel_update_dict: dict):
@@ -134,7 +138,8 @@ class EventRequestManager(QNetworkAccessManager):
             # In the future, if we consider it useful, we can immediately call here
             # `self.reconnect(reschedule_on_err=False)`
             # and raise an exception if it fails to reconnect
-            raise CoreConnectionError('The connection to the Tribler Core was lost')
+            exception = CoreConnectionError('The connection to the Tribler Core was lost')
+            self.tribler_exception_signal.emit(exception)
 
         should_retry = reschedule_on_err and time.time() < self.start_time + CORE_CONNECTION_TIMEOUT
         error_name = self.network_errors.get(error, error)
@@ -145,10 +150,12 @@ class EventRequestManager(QNetworkAccessManager):
             if should_retry:
                 self.connect_timer.start(RECONNECT_INTERVAL_MS)  # Reschedule an attempt
             else:
-                raise CoreConnectTimeoutError(
+                exception_to_raise = CoreConnectTimeoutError(
                     f"Could not connect with the Tribler Core within {CORE_CONNECTION_TIMEOUT} seconds: "
                     f"{error_name} (code {error})"
                 )
+                self.tribler_exception_signal.emit(exception_to_raise)
+                # raise exception_to_raise
 
     def on_read_data(self):
         if not self.receiving_data:

@@ -14,7 +14,7 @@ from tribler.core.utilities.process_manager import ProcessManager
 from tribler.gui import gui_sentry_reporter
 from tribler.gui.app_manager import AppManager
 from tribler.gui.event_request_manager import EventRequestManager
-from tribler.gui.exceptions import CoreConnectTimeoutError, CoreCrashedError
+from tribler.gui.exceptions import CoreConnectTimeoutError, CoreCrashedError, CoreError
 from tribler.gui.network.request_manager import SHUTDOWN_ENDPOINT, request_manager
 from tribler.gui.utilities import connect
 
@@ -66,6 +66,8 @@ class CoreManager(QObject):
         self.last_core_stderr_output: deque = deque(maxlen=CORE_OUTPUT_DEQUE_LENGTH)
 
         connect(self.events_manager.core_connected, self.on_core_connected)
+        connect(self.events_manager.tribler_exception_signal, self.on_core_exception)
+        self.core_process_start_attempt = 0
 
     def on_core_connected(self, _):
         if self.core_finished:
@@ -105,7 +107,14 @@ class CoreManager(QObject):
         else:
             self.start_tribler_core()
 
-    def start_tribler_core(self):
+    def start_tribler_core(self, is_restart=False):
+        if self.core_process_start_attempt > 2:
+            raise CoreCrashedError("Failed to run the core")
+        if is_restart:
+            self.core_running = False
+            self.core_finished = False
+
+        self.core_process_start_attempt += 1
         self.use_existing_core = False
 
         core_env = self.core_env
@@ -114,6 +123,7 @@ class CoreManager(QObject):
             core_env.insert("CORE_API_KEY", self.api_key)
             core_env.insert("TSTATEDIR", str(self.root_state_dir))
             core_env.insert("TRIBLER_GUI_PID", str(os.getpid()))
+            core_env.insert("FAIL_CORE", "0" if is_restart else "1")
 
         core_args = self.core_args
         if not core_args:
@@ -201,6 +211,10 @@ class CoreManager(QObject):
 
         raw_output = bytes(self.core_process.readAllStandardError())
         output = self.decode_raw_core_output(raw_output).strip()
+        print(f"Error logs from core process: \n"
+              f"{'==' * 25}\n"
+              f"{output}"
+              f"\n{'==' * 25}\n")
         self.last_core_stderr_output.append(output)
         gui_sentry_reporter.add_breadcrumb(
             message=output,
@@ -301,7 +315,11 @@ class CoreManager(QObject):
                 if self.events_manager.connect_timer and self.events_manager.connect_timer.isActive():
                     self.events_manager.connect_timer.stop()
 
-            raise CoreCrashedError(error_message)
+            print(f"State of core process on finished: {self.core_process.state()}")
+            print(f"Exit status: {self.core_process.exitStatus()}; exit code: {self.core_process.exitCode()}")
+
+            self.start_tribler_core(is_restart=True)
+            # raise CoreCrashedError(error_message)
 
     @staticmethod
     def decode_raw_core_output(output: bytes) -> str:
@@ -313,3 +331,6 @@ class CoreManager(QObject):
             # It may be hard to guess the real encoding on some systems,
             # but by using the "backslashreplace" error handler we can keep all the received data.
             return output.decode('ascii', errors='backslashreplace')
+
+    def on_core_exception(self, error: dict):
+        print(f"Received core error here: {error}")

@@ -8,6 +8,9 @@ from enum import Enum, auto
 from hashlib import md5
 from typing import Any, Dict, List, Optional
 
+from sentry_sdk.transport import HttpTransport
+from sentry_sdk.utils import capture_internal_exceptions
+
 import sentry_sdk
 from faker import Faker
 from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
@@ -77,6 +80,35 @@ def this_sentry_strategy(reporter, strategy: SentryStrategy):
         reporter.thread_strategy.set(saved_strategy)
 
 
+class CachingTransport(HttpTransport):
+    def _send_event(self, event):
+        try:
+            super()._send_event(event)
+            print(f"Called Caching Transport; Not going to exception branch")
+        except Exception as e:
+            with capture_internal_exceptions():
+                print(f"calling capture internal exceptions")
+                self._cache_event(event)
+
+    def _cache_event(self, event):
+        with open("sentry_cache.txt", "a") as f:
+            f.write(str(event) + "\n")
+
+    def flush(self, timeout, callback=None):
+        super().flush(timeout, callback)
+
+        # Send cached events when the application restarts.
+        if os.path.exists("sentry_cache.txt"):
+            with open("sentry_cache.txt", "r") as f:
+                lines = f.readlines()
+
+            for line in lines:
+                event = eval(line.strip())
+                super()._send_event(event)
+
+            # os.remove("sentry_cache.txt")
+
+
 class SentryReporter:
     """SentryReporter designed for sending reports to the Sentry server from
     a Tribler Client.
@@ -140,7 +172,8 @@ class SentryReporter:
             ignore_errors=[
                 KeyboardInterrupt,
                 ConnectionResetError,
-            ]
+            ],
+            transport=CachingTransport
         )
 
         ignore_logger(self._sentry_logger_name)

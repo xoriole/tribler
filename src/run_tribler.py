@@ -92,8 +92,8 @@ if __name__ == "__main__":
 
     # Check whether we need to start the core or the user interface
     if parsed_args.core:
-        from tribler.core.utilities.pony_utils import track_slow_db_sessions
-        track_slow_db_sessions()
+        # from tribler.core.utilities.pony_utils import track_slow_db_sessions
+        # track_slow_db_sessions()
 
         from tribler.core.start_core import run_core
         from tribler.core.components.reporter.exception_handler import default_core_exception_handler
@@ -103,8 +103,8 @@ if __name__ == "__main__":
         slow_coro_stack_tracking = os.environ.get('SLOW_CORO_STACK_TRACING', '0' if is_frozen() else '1')
         # By default, the stack tracking of slow coroutines is enabled when running the Tribler from sources
         # and disabled in the compiled version, as it makes the Python code of Core work slower.
-        if slow_coro_stack_tracking == '1':
-            start_main_thread_stack_tracing()
+        # if slow_coro_stack_tracking == '1':
+        #     start_main_thread_stack_tracing()
 
         run_core(api_port, api_key, root_state_dir, parsed_args)
     else:  # GUI

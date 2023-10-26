@@ -2,8 +2,10 @@ import asyncio
 import logging
 import logging.config
 import os
+import random
 import signal
 import sys
+import traceback
 from pathlib import Path
 from typing import List, Optional
 
@@ -48,6 +50,22 @@ CONFIG_FILE_NAME = 'triblerd.conf'
 
 
 # pylint: disable=import-outside-toplevel
+
+
+def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
+    # Here you can decide what to do with the exception
+    # For this example, we will print the exception details to stderr
+    print("Unhandled Exception on Run Tribler:", file=sys.stderr)
+    traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stderr)
+
+    # You can also decide to, for instance, log the exception to a file, send a
+    # notification, or take other actions depending on your application's needs.
+
+
+# Set the function as the unhandled exception handler
+# exception_handler = default_core_exception_handler
+sys.excepthook = default_core_exception_handler.unhandled_system_error_observer
+# sys.excepthook = handle_unhandled_exception
 
 
 def components_gen(config: TriblerConfig):
@@ -169,6 +187,9 @@ def run_tribler_core_session(api_port: Optional[int], api_key: str,
     loop = asyncio.get_event_loop()
     exception_handler = default_core_exception_handler
     loop.set_exception_handler(exception_handler.unhandled_error_observer)
+
+    if os.environ.get('FAIL_CORE', '0') == '1':
+        1/0
 
     try:
         exit_code = loop.run_until_complete(core_session(config, components=list(components_gen(config))))
