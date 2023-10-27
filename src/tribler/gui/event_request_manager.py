@@ -134,7 +134,8 @@ class EventRequestManager(QNetworkAccessManager):
             # In the future, if we consider it useful, we can immediately call here
             # `self.reconnect(reschedule_on_err=False)`
             # and raise an exception if it fails to reconnect
-            raise CoreConnectionError('The connection to the Tribler Core was lost')
+            # raise CoreConnectionError('The connection to the Tribler Core was lost')
+            self.reconnect(reschedule_on_err=True)
 
         should_retry = reschedule_on_err and time.time() < self.start_time + CORE_CONNECTION_TIMEOUT
         error_name = self.network_errors.get(error, error)
