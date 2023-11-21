@@ -31,9 +31,11 @@ runs:
       if: steps.check_libsodium.outputs.files_exists == 'false'
       env:
         RELEASE_FOLDER: .\libsodium\x64\Release
-      shell: cmd
+      shell: pwsh
       run: |
-        C:\msys64\usr\bin\wget.exe -q https://download.libsodium.org/libsodium/releases/libsodium-${{inputs.libsodium-version}}-msvc.zip
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri https://download.libsodium.org/libsodium/releases/libsodium-${{inputs.libsodium-version}}-msvc.zip -OutFile libsodium-${{inputs.libsodium-version}}-msvc.zip
+        #C:\msys64\usr\bin\wget.exe -q https://download.libsodium.org/libsodium/releases/libsodium-${{inputs.libsodium-version}}-msvc.zip
         dir
         7z x libsodium-${{inputs.libsodium-version}}-msvc.zip
         dir %RELEASE_FOLDER% /ad /b /o-n > latest_release_file
