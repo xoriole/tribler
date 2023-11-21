@@ -195,7 +195,7 @@ class CoreExceptionHandler:
                 continue
 
             error_file_path = self.crash_dir / error_filename
-            with open(error_file_path, 'r') as file_handle:
+            with open(error_file_path, 'r', encoding='utf-8') as file_handle:
                 try:
                     saved_errors.append(ReportedError(**json.loads(file_handle.read())))
                 except JSONDecodeError:
