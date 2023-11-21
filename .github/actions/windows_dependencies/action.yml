@@ -33,8 +33,7 @@ runs:
         RELEASE_FOLDER: .\libsodium\x64\Release
       shell: cmd
       run: |
-        #[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        #Invoke-WebRequest -Uri https://download.libsodium.org/libsodium/releases/libsodium-${{inputs.libsodium-version}}-msvc.zip -OutFile libsodium-${{inputs.libsodium-version}}-msvc.zip
+        dir
         echo Downloading libsodium-${{inputs.libsodium-version}}-msvc.zip
         C:\msys64\usr\bin\wget.exe -q https://download.libsodium.org/libsodium/releases/libsodium-${{inputs.libsodium-version}}-msvc.zip
         echo Extracting libsodium-${{inputs.libsodium-version}}-msvc.zip
