@@ -179,7 +179,7 @@ class CoreExceptionHandler:
         self_copy.should_stop = False
         serialized_error = json.dumps(dataclasses.asdict(self_copy), indent=True)
 
-        with open(filepath, 'w') as exc_file:
+        with open(filepath, 'w', encoding='utf-8') as exc_file:
             exc_file.write(serialized_error)
 
     def delete_saved_file(self, reported_error: ReportedError):
