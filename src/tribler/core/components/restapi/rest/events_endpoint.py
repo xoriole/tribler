@@ -12,6 +12,7 @@ from ipv8.REST.schema import schema
 from ipv8.messaging.anonymization.tunnel import Circuit
 
 from tribler.core import notifications
+from tribler.core.components.reporter.exception_handler import default_core_exception_handler
 from tribler.core.components.reporter.reported_error import ReportedError
 from tribler.core.components.restapi.rest.rest_endpoint import RESTEndpoint, RESTStreamResponse
 from tribler.core.components.restapi.rest.util import fix_unicode_dict
@@ -124,6 +125,11 @@ class EventsEndpoint(RESTEndpoint):
         if not self.should_skip_message(message):
             self.queue.put_nowait(message)
 
+    def send_exception(self, reported_error: ReportedError):
+        message = self.error_message(reported_error)
+        self.send_event(message)
+        default_core_exception_handler.delete_saved_file(reported_error)
+
     async def process_queue(self):
         while True:
             message = await self.queue.get()
@@ -161,12 +167,14 @@ class EventsEndpoint(RESTEndpoint):
             self._logger.warning('Ignoring tribler exception, because the endpoint is shutting down.')
             return
 
-        message = self.error_message(reported_error)
         if self.has_connection_to_gui():
-            self.send_event(message)
-        elif not self.undelivered_error:
-            # If there are several undelivered errors, we store the first error as more important and skip other
-            self.undelivered_error = message
+            self.send_exception(reported_error)
+        else:
+            if reported_error.should_stop:
+                default_core_exception_handler.save_to_file(reported_error)
+            if not self.undelivered_error:
+                # If there are several undelivered errors, we store the first error as more important and skip other
+                self.undelivered_error = self.error_message(reported_error)
 
     @docs(
         tags=["General"],
@@ -203,6 +211,11 @@ class EventsEndpoint(RESTEndpoint):
             error = self.undelivered_error
             self.undelivered_error = None
             await response.write(self.encode_message(error))
+
+        unreported_errors_from_last_run = default_core_exception_handler.get_saved_errors()
+        for unreported_error in unreported_errors_from_last_run:
+            await response.write(self.encode_message(self.error_message(unreported_error)))
+            default_core_exception_handler.delete_saved_file(unreported_error)
 
         self.events_responses.append(response)
 

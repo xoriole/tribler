@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -8,6 +9,7 @@ class ReportedError:
     text: str
     event: dict = field(repr=False)
     additional_information: dict = field(default_factory=lambda: {}, repr=False)
+    created_at: int = field(default_factory=lambda: int(time.time() * 1000), repr=False)
 
     long_text: str = field(default='', repr=False)
     context: str = field(default='', repr=False)
