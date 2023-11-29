@@ -3,20 +3,19 @@ name: Run tests and publish report
 on:
   workflow_call:
     inputs:
-      python-version:
-        default: 3.8
-        type: string
-        required: false
-
-      matrix:
-        default: '{"os":["ubuntu-latest"]}'
-        type: string
-        required: false
-
       ref:
         default: ${{ github.ref }}
         type: string
         required: false
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch
+        default: ${{ github.ref }}
+        type: string
+        required: true
+
 
 permissions:
   contents: read
