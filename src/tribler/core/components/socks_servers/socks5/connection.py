@@ -204,14 +204,18 @@ class Socks5Connection(Protocol):
 
         return affected_destinations
 
-    def connection_lost(self, _):
+    def connection_lost(self, reason='unspecified'):
         self.socksserver.connection_lost(self)
 
     def close(self, reason='unspecified'):
-        self._logger.info("Closing session, reason %s", reason)
+        self._logger.error("Closing session, reason %s", reason)
         if self.udp_connection:
             self.udp_connection.close()
             self.udp_connection = None
 
         if self.transport:
-            self.transport.close()
+            try:
+                self.transport.close()
+            except Exception:
+                self._logger.exception("Exception thrown while closing transport")
+                raise # re-raise the exception

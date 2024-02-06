@@ -45,9 +45,9 @@ class Socks5Server:
             self.server.close()
             await self.server.wait_closed()
 
-    def connection_lost(self, socks5connection):
-        self._logger.debug("SOCKS5 TCP connection lost")
+    def connection_lost(self, socks5connection, reason=None):
+        self._logger.error(f"SOCKS5 TCP connection lost; connection: {socks5connection}; reason:{reason}")
         if socks5connection in self.sessions:
             self.sessions.remove(socks5connection)
 
-        socks5connection.close()
+        socks5connection.close(reason=reason)
