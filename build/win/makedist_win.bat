@@ -11,7 +11,7 @@ IF NOT EXIST build\win (
 )
 
 REM locate Python directory and set up Python environment
-CALL python3 build\win\locate-python.py > tmp_pythonhome.txt
+python3 build\win\locate-python.py > tmp_pythonhome.txt
 TYPE tmp_pythonhome.txt
 SET /p PYTHONHOME= < tmp_pythonhome.txt
 DEL /f /q tmp_pythonhome.txt
@@ -36,10 +36,10 @@ CALL build\win\clean.bat
 
 REM ----- Prepare venv & install dependencies before the build
 
-CALL python3 -m venv build-env
-CALL ./build-env/Scripts/activate.bat
-CALL python3 -m pip install --upgrade pip
-CALL python3 -m pip install --upgrade -r requirements-build.txt
+python3 -m venv build-env
+./build-env/Scripts/activate.bat
+python3 -m pip install --upgrade pip
+python3 -m pip install --upgrade -r requirements-build.txt
 
 REM ----- Build
 
@@ -47,7 +47,7 @@ REM Arno: When adding files here, make sure tribler.nsi actually
 REM packs them in the installer .EXE
 
 ECHO Install pip dependencies for correct py-installer's work
-CALL python3 -m pip install --upgrade -r build\win\requirements.txt
+python3 -m pip install --upgrade -r build\win\requirements.txt
 
 CALL %PYTHONHOME%\Scripts\pyinstaller.exe tribler.spec --log-level=%LOG_LEVEL% || exit /b
 
