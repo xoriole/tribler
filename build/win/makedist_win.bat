@@ -1,4 +1,4 @@
-REM @echo off
+@echo on
 REM No LIBRARYNAME here as this is not distributed with Tribler as BaseLib
 
 if not defined LOG_LEVEL set LOG_LEVEL="DEBUG"
