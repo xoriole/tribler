@@ -1,13 +1,58 @@
 import os
 import re
 import shutil
+import sys
 from pathlib import Path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from cx_Freeze import setup, Executable
 
 # Copy src/run_tribler.py --> src/tribler/run.py to make it accessible in entry_points scripts.
 shutil.copy("src/run_tribler.py", "src/tribler/run.py")
 
+# Assuming src/run_tribler.py is your main script
+executable = Executable(
+    script="src/run_tribler.py",
+    base="Win32GUI" if sys.platform == "win32" else None,
+    icon='build/win/resources/tribler.ico' if sys.platform == 'win32' else 'build/mac/resources/tribler.icns',
+)
+
+# Add additional packages and modules to include
+packages = [
+    "aiohttp_apispec",
+    "sentry_sdk",
+    "ipv8",
+    "PIL",
+    "pkg_resources",
+    "pydantic",
+    "pyqtgraph",
+    "PyQt5.QtTest",
+    "requests",
+    "tribler.core",
+    "tribler.gui",
+    "faker"
+    # Add more packages as needed
+]
+
+# Include files and directories
+include_files = [
+    ("src/tribler/gui/qt_resources", "qt_resources"),
+    ("src/tribler/gui/images", "images"),
+    ("src/tribler/gui/i18n", "i18n"),
+    ("src/tribler/core", "tribler_source/tribler/core"),
+    ("src/tribler/gui", "tribler_source/tribler/gui"),
+    ("build/win/resources", "tribler_source/resources"),
+    # Add more files/directories as needed
+]
+
+# Excludes
+excludes = ['wx', 'PyQt4', 'FixTk', 'tcl', 'tk', '_tkinter', 'tkinter', 'Tkinter', 'matplotlib']
+
+build_exe_options = {
+    "packages": packages,
+    "excludes": excludes,
+    "include_files": include_files,
+}
 
 def read_version_from_file(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
@@ -79,4 +124,6 @@ setup(
         "Topic :: Security :: Cryptography",
         "Operating System :: OS Independent",
     ],
+    options={"build_exe": build_exe_options},
+    executables=[executable]
 )
