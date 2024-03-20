@@ -1,4 +1,4 @@
-name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
+name: Publish 📦 to PyPI
 
 on:
   workflow_dispatch:
@@ -31,13 +31,13 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
-    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    if: startsWith(github.ref, 'refs/tags/')
     needs:
     - build
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/tribler  # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/p/tribler
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
@@ -58,7 +58,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/tribler
+      url: https://test.pypi.org/p/tribler2
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
