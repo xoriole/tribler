@@ -47,7 +47,7 @@ extras_require = {
 
 
 setup(
-    name="Tribler",
+    name="tribler2",
     version=version,
     description="Privacy enhanced BitTorrent client with P2P content discovery",
     long_description=Path('README.rst').read_text(encoding="utf-8"),
