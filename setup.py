@@ -54,7 +54,7 @@ setup(
     long_description_content_type="text/x-rst",
     author="Tribler Team",
     author_email="info@tribler.org",
-    url="https://www.tribler.org",
+    url="https://github.com/Tribler/tribler",
     keywords='BitTorrent client, file sharing, peer-to-peer, P2P, TOR-like network',
     python_requires='>=3.8',
     packages=find_packages(where="src"),
