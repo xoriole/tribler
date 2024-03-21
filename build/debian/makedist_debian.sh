@@ -8,8 +8,7 @@ if [[ ! -d build/debian ]]; then
   echo "Please run this script from project root as:\n./build/debian/makedist_debian.sh"
 fi
 
-rm -rf build/tribler
-rm -rf dist/tribler
+rm -rf dist
 rm -rf build/debian/tribler/usr/share/tribler
 
 if [ ! -z "$VENV" ]; then
@@ -30,7 +29,9 @@ python3 ./build/update_version.py -r .
 python3 ./build/debian/update_metainfo.py -r .
 
 # ----- Build binaries
-python3 -m PyInstaller tribler.spec --log-level="${LOG_LEVEL}"
+pushd .
+python3 setup.py bdist
+popd
 
 # ----- Build dpkg
 cp -r ./dist/tribler ./build/debian/tribler/usr/share/tribler

@@ -21,7 +21,7 @@ from pathlib import Path
 from setuptools import find_packages
 from cx_Freeze import setup, Executable
 
-app_name = "Tribler"
+app_name = "Tribler" if sys.platform != "linux2" else "tribler"
 app_script = "src/tribler/run.py"
 app_icon_path = "build/win/resources/tribler.ico" if sys.platform == "win32" else "build/mac/resources/tribler.icns"
 app_executable = Executable(
@@ -32,6 +32,7 @@ app_executable = Executable(
 )
 
 # These packages will be included in the build
+sys.path.insert(0, 'src')
 included_packages = [
     "aiohttp_apispec",
     "sentry_sdk",
@@ -75,7 +76,7 @@ build_exe_options = {
     "excludes": excluded_packages,
     "include_files": included_files,
     "include_msvcr": True,
-    'build_exe': 'dist'
+    'build_exe': 'dist/tribler'
 }
 
 __all__ = ["setup", "app_executable", "build_exe_options"]
