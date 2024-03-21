@@ -1,58 +1,12 @@
 import os
 import re
 import shutil
-import sys
 from pathlib import Path
 
 from setuptools import find_packages
-from cx_Freeze import setup, Executable
 
-# Copy src/run_tribler.py --> src/tribler/run.py to make it accessible in entry_points scripts.
-shutil.copy("src/run_tribler.py", "src/tribler/run.py")
+from build import app_executable, build_exe_options, setup
 
-# Assuming src/run_tribler.py is your main script
-executable = Executable(
-    script="src/run_tribler.py",
-    base="Win32GUI" if sys.platform == "win32" else None,
-    icon='build/win/resources/tribler.ico' if sys.platform == 'win32' else 'build/mac/resources/tribler.icns',
-)
-
-# Add additional packages and modules to include
-packages = [
-    "aiohttp_apispec",
-    "sentry_sdk",
-    "ipv8",
-    "PIL",
-    "pkg_resources",
-    "pydantic",
-    "pyqtgraph",
-    "PyQt5.QtTest",
-    "requests",
-    "tribler.core",
-    "tribler.gui",
-    "faker"
-    # Add more packages as needed
-]
-
-# Include files and directories
-include_files = [
-    ("src/tribler/gui/qt_resources", "qt_resources"),
-    ("src/tribler/gui/images", "images"),
-    ("src/tribler/gui/i18n", "i18n"),
-    ("src/tribler/core", "tribler_source/tribler/core"),
-    ("src/tribler/gui", "tribler_source/tribler/gui"),
-    ("build/win/resources", "tribler_source/resources"),
-    # Add more files/directories as needed
-]
-
-# Excludes
-excludes = ['wx', 'PyQt4', 'FixTk', 'tcl', 'tk', '_tkinter', 'tkinter', 'Tkinter', 'matplotlib']
-
-build_exe_options = {
-    "packages": packages,
-    "excludes": excludes,
-    "include_files": include_files,
-}
 
 def read_version_from_file(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
@@ -63,10 +17,6 @@ def read_version_from_file(file_path):
         version_str = version_match.group(1)
         return version_str.split("-")[0]
     raise RuntimeError("Unable to find version string.")
-
-
-version_file = os.path.join('src', 'tribler', 'core', 'version.py')
-version = read_version_from_file(version_file)
 
 
 def read_requirements(file_name, directory='.'):
@@ -84,12 +34,24 @@ def read_requirements(file_name, directory='.'):
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
 install_requires = read_requirements('requirements-build.txt', base_dir)
 extras_require = {
     'dev': read_requirements('requirements-test.txt', base_dir),
 }
 
+# Copy src/run_tribler.py --> src/tribler/run.py to make it accessible in entry_points scripts.
+# See: entry_points={"gui_scripts": ["tribler=tribler.run:main"]} in setup() below.
+shutil.copy("src/run_tribler.py", "src/tribler/run.py")
+
+# Read the version from the version file: src/tribler/core/version.py
+# Note that, for version.py to include the correct version, it should be generated first using git commands.
+# For example:
+#    git describe --tags | python -c "import sys; print(next(sys.stdin).lstrip('v'))" > .TriblerVersion
+#    git rev-parse HEAD > .TriblerCommit
+# Then, the version.py file can be generated using the following command:
+#    python build/update_version.py
+version_file = os.path.join('src', 'tribler', 'core', 'version.py')
+version = read_version_from_file(version_file)
 
 setup(
     name="tribler",
@@ -125,5 +87,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     options={"build_exe": build_exe_options},
-    executables=[executable]
+    executables=[app_executable]
 )
