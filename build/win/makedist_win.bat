@@ -68,8 +68,8 @@ copy C:\build\vc_redist_140.exe dist\tribler
 
 REM Copy various libraries required on runtime (libsodium and openssl)
 copy C:\build\libsodium.dll dist\tribler
-REM Sandip, 2019-10-24: No need to copy openssl dlls separately
-REM copy C:\build\openssl\*.dll dist\tribler
+REM Sandip, 2024-03-26: Some openssl dlls are missing so need to be copied manually.
+copy C:\build\openssl\*.dll dist\tribler
 
 
 @echo Running NSIS
