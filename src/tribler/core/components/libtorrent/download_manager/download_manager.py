@@ -286,6 +286,7 @@ class DownloadManager(TaskManager):
             # By default block all IPs except 1.1.1.1 (which is used to ensure libtorrent makes a connection to us)
             self.update_ip_filter(ltsession, ['1.1.1.1'])
 
+        self._logger.info('Applying session settings')
         self.set_session_settings(ltsession, settings)
         ltsession.set_alert_mask(self.default_alert_mask)
 
@@ -293,6 +294,7 @@ class DownloadManager(TaskManager):
             proxy_settings = DownloadManager.get_libtorrent_proxy_settings(self.config)
         else:
             proxy_settings = [SOCKS5_PROXY_DEF, ("127.0.0.1", self.socks_listen_ports[hops - 1]), None]
+        self._logger.info(f'Applying proxy settings, {hops=}')
         self.set_proxy_settings(ltsession, *proxy_settings)
 
         for extension in extensions:
@@ -300,10 +302,13 @@ class DownloadManager(TaskManager):
 
         # Set listen port & start the DHT
         if hops == 0:
+            self._logger.info(f"Listening on {libtorrent_port}..{libtorrent_port + 10}")
             ltsession.listen_on(libtorrent_port, libtorrent_port + 10)
             if libtorrent_port != ltsession.listen_port() and store_listen_port:
+                self._logger.info(f"Actual listen port is {ltsession.listen_port()}")
                 self.config.port = ltsession.listen_port()
             try:
+                self._logger.info("Loading session state")
                 with open(self.state_dir / LTSTATE_FILENAME, 'rb') as fp:
                     lt_state = bdecode_compat(fp.read())
                 if lt_state is not None:
@@ -322,9 +327,11 @@ class DownloadManager(TaskManager):
             self.set_session_settings(ltsession, settings)
 
         if self.config.dht and not self.dummy_mode:
+            self._logger.info("Starting DHT")
             ltsession.start_dht()
             for router in DEFAULT_DHT_ROUTERS:
                 ltsession.add_dht_router(*router)
+            self._logger.info("Starting LSD")
             ltsession.start_lsd()
 
         self._logger.debug("Started libtorrent session for %d hops on port %d", hops, ltsession.listen_port())
