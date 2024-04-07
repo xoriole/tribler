@@ -1,4 +1,6 @@
 import logging
+import sys
+import time
 
 from ipv8.taskmanager import TaskManager, task
 
@@ -13,6 +15,10 @@ class PayoutManager(TaskManager):
     def __init__(self, bandwidth_community, dht):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
+
+        print(f"*** SLEEP ***", file=sys.stderr, flush=True)
+        time.sleep(5)  # Artifical delay to trigger
+
         self.bandwidth_community = bandwidth_community
         self.dht = dht
         self.tribler_peers = {}
