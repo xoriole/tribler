@@ -1,5 +1,10 @@
 from asyncio import Handle, Task
+from pathlib import Path
 from typing import Optional
+
+
+from tribler.core.utilities.slow_coro_detection import logger
+
 
 # pylint: disable=protected-access
 
@@ -29,3 +34,13 @@ def format_info(handle: Handle, include_stack: bool = False, stack_cut_duration:
         stack = 'Set SLOW_CORO_STACK_TRACING=1 to see the coroutine stack'
 
     return f"{task_repr}\n{stack}"
+
+
+def read_slow_coro_report(slow_coro_report_filepath: Path):
+    try:
+        if slow_coro_report_filepath.exists():
+            return slow_coro_report_filepath.read_text(encoding='utf-8')
+    except Exception as exc:
+        logger.exception(f'Exception while reading slow coro report: {exc.__class__.__name__}: {exc}')
+
+    return ''

@@ -14,6 +14,8 @@ from tribler.core.components.reporter.reported_error import ReportedError
 from tribler.core.sentry_reporter.sentry_reporter import PROCESS_ARCHITECTURE, SentryReporter
 from tribler.core.sentry_reporter.sentry_scrubber import SentryScrubber
 from tribler.core.sentry_reporter.sentry_tools import CONTEXT_DELIMITER, LONG_TEXT_DELIMITER
+from tribler.core.utilities.slow_coro_detection import SLOW_CORO_REPORT_FILENAME
+from tribler.core.utilities.slow_coro_detection.utils import read_slow_coro_report
 from tribler.gui.sentry_mixin import AddBreadcrumbOnShowMixin
 from tribler.gui.tribler_action_menu import TriblerActionMenu
 from tribler.gui.utilities import connect, get_ui_file_path, tr
@@ -36,6 +38,7 @@ class FeedbackDialog(AddBreadcrumbOnShowMixin, QDialog):
         QDialog.__init__(self, parent)
         self.core_manager = parent.core_manager
         self.process_manager = parent.process_manager
+        self.root_state_dir = parent.root_state_dir
 
         uic.loadUi(get_ui_file_path('feedback_dialog.ui'), self)
 
@@ -154,13 +157,18 @@ class FeedbackDialog(AddBreadcrumbOnShowMixin, QDialog):
 
         last_processes = [str(p) for p in self.process_manager.get_last_processes()]
 
+        slow_coro_report = read_slow_coro_report(self.root_state_dir / SLOW_CORO_REPORT_FILENAME)
+
+
+
         self.sentry_reporter.send_event(
             event=self.reported_error.event,
             post_data=post_data,
             sys_info=sys_info_dict,
             additional_tags=self.additional_tags,
             last_core_output=self.reported_error.last_core_output,
-            last_processes=last_processes
+            last_processes=last_processes,
+            slow_coro_report=slow_coro_report,
         )
         self.on_report_sent()
 

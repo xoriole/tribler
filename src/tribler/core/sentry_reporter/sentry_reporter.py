@@ -26,6 +26,7 @@ VALUE = 'value'
 TYPE = 'type'
 LAST_CORE_OUTPUT = 'last_core_output'
 LAST_PROCESSES = 'last_processes'
+SLOW_CORO_REPORT = '_slow_coro_report'
 PLATFORM = 'platform'
 PROCESS_ARCHITECTURE = 'process_architecture'
 OS = 'os'
@@ -169,7 +170,7 @@ class SentryReporter:
 
     def send_event(self, event: Dict = None, post_data: Dict = None, sys_info: Dict = None,
                    additional_tags: Dict[str, Any] = None, last_core_output: Optional[str] = None,
-                   last_processes: List[str] = None):
+                   last_processes: List[str] = None, slow_coro_report: Optional[str] = None):
         """Send the event to the Sentry server
 
         This method
@@ -191,12 +192,10 @@ class SentryReporter:
             additional_tags: tags that will be added to the event
             last_core_output: string that represents last core output
             last_processes: list of strings describing last Tribler GUI/Core processes
-
+            slow_coro_report: string that represent the slowest coroutine from the last Core run
         Returns:
             Event that was sent to Sentry server
         """
-        self._logger.info(f"Send: {post_data}, {event}")
-
         if event is None:
             return event
 
@@ -244,12 +243,14 @@ class SentryReporter:
         if last_processes:
             reporter[LAST_PROCESSES] = last_processes
 
+        reporter[SLOW_CORO_REPORT] = slow_coro_report.split('\n') if slow_coro_report else []
+
         reporter[ADDITIONAL_INFORMATION] = self.additional_information
 
         # try to retrieve an error from the last_core_output
         if last_core_output:
             # split for better representation in the web view
-            reporter[LAST_CORE_OUTPUT] = last_core_output.split('\n')
+            reporter[LAST_CORE_OUTPUT] = last_core_output.split('\n')[-20:]
             if last_core_exception := parse_last_core_output(last_core_output):
                 exceptions = event.get(EXCEPTION, {})
                 gui_exception = get_last_item(exceptions.get(VALUES, []), {})
@@ -261,6 +262,9 @@ class SentryReporter:
                 delete_item(gui_exception, 'stacktrace')
 
                 exceptions[VALUES] = [gui_exception, core_exception]
+
+        self._logger.info(f"*** Send: {event}")
+
         with this_sentry_strategy(self, SentryStrategy.SEND_ALLOWED):
             sentry_sdk.capture_event(event)
         return event
