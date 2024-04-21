@@ -44,6 +44,7 @@ from tribler.core.utilities.exit_codes import EXITCODE_ANOTHER_CORE_PROCESS_IS_R
 from tribler.core.utilities.process_locking import CORE_LOCK_FILENAME, try_acquire_file_lock
 from tribler.core.utilities.process_manager import ProcessKind
 from tribler.core.utilities.process_manager.manager import setup_process_manager
+from tribler.core.utilities.slow_coro_detection import SLOW_CORO_REPORT_FILENAME
 
 logger = logging.getLogger(__name__)
 CONFIG_FILE_NAME = 'triblerd.conf'
@@ -137,9 +138,6 @@ def run_tribler_core_session(api_port: Optional[int], api_key: str,
                 f'API key: "{api_key}". State dir: "{state_dir}". '
                 f'Core test mode: "{gui_test_mode}"')
 
-    slow_coro_detection.patch_asyncio()  # Track the current coroutine handled by asyncio
-    slow_coro_detection.start_watching_thread()  # Run a separate thread to watch for the main thread asyncio freezes
-
     config = TriblerConfig.load(state_dir=state_dir, reset_config_on_error=True)
     config.gui_test_mode = gui_test_mode
 
@@ -197,6 +195,11 @@ def run_core(api_port: Optional[int], api_key: Optional[str], root_state_dir, pa
         msg = 'Another Core process is already running'
         logger.warning(msg)
         process_manager.sys_exit(EXITCODE_ANOTHER_CORE_PROCESS_IS_RUNNING, msg)
+
+    slow_coro_report_filepath = root_state_dir / SLOW_CORO_REPORT_FILENAME
+    slow_coro_detection.patch_asyncio()  # Track the current coroutine handled by asyncio
+    # Run a separate thread to watch for the main thread asyncio freezes
+    slow_coro_detection.start_watching_thread(slow_coro_report_filepath)
 
     version_history = VersionHistory(root_state_dir)
     state_dir = version_history.code_version.directory

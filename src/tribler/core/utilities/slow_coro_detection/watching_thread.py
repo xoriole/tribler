@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from asyncio import Handle
+from pathlib import Path
 from threading import Event, Lock, Thread
 
 from typing import Optional
@@ -33,7 +34,7 @@ lock = Lock()
 _thread: Optional[SlowCoroWatchingThread] = None
 
 
-def start_watching_thread():
+def start_watching_thread(slow_coro_report_filepath: Optional[Path] = None):
     """
     Starts separate thread that detects and reports slow coroutines.
     """
@@ -43,6 +44,7 @@ def start_watching_thread():
             return  # the thread is already created
 
         _thread = SlowCoroWatchingThread(daemon=True)
+        _thread.slow_coro_report_filepath = slow_coro_report_filepath
 
     _thread.start()
 
@@ -54,6 +56,7 @@ class SlowCoroWatchingThread(Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
         super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
         self.stop_event = Event()
+        self.slow_coro_report_filepath: Optional[Path] = None
 
     def run(self):
         # SlowCoroWatchingThread.run() checks periodically that we are not currently in the coroutine step that already
@@ -75,7 +78,8 @@ class SlowCoroWatchingThread(Thread):
             if handle is not None:
                 duration = time.time() - start_time
                 if duration > SLOW_CORO_DURATION_THRESHOLD:
-                    _report_freeze(handle, duration, first_report=prev_reported_handle is not handle)
+                    _report_freeze(handle, duration, first_report=prev_reported_handle is not handle,
+                                   slow_coro_report_filepath=self.slow_coro_report_filepath)
                     new_reported_handle = handle
             prev_reported_handle = new_reported_handle
 
@@ -85,7 +89,8 @@ class SlowCoroWatchingThread(Thread):
         self.stop_event.set()
 
 
-def _report_freeze(handle: Handle, duration: float, first_report: bool):
+def _report_freeze(handle: Handle, duration: float, first_report: bool,
+                   slow_coro_report_filepath: Optional[Path] = None):
     # When printing the stack, we only want to show the stack frames executing long enough,
     # as displaying the entire stack can confuse the reader and mislead him regarding what function should be optimized
     stack_cut_duration = duration * 0.8
@@ -95,13 +100,27 @@ def _report_freeze(handle: Handle, duration: float, first_report: bool):
 
     logger.error(f"A slow coroutine step is {'still ' if not first_report else ''}occupying the loop "
                  f"for {duration:.3f} seconds already: {info_str}")
-    update_slowest_coro_info(duration)
+    update_slowest_coro_info(duration, slow_coro_report_filepath)
 
 
-def update_slowest_coro_info(duration):
+def update_slowest_coro_info(duration, slow_coro_report_filepath: Optional[Path] = None):
+    new_coro_info_to_write = None
     with lock:
         if duration > current.slowest_coro_duration :
             current.slowest_coro_duration = duration
 
             if current.slowest_coro_info != current.coro_info:
                 current.slowest_coro_info = current.coro_info
+
+            new_coro_info_to_write = current.coro_info
+
+    if new_coro_info_to_write and slow_coro_report_filepath is not None:
+        write_slowest_coro_info_to_file(new_coro_info_to_write, duration, slow_coro_report_filepath)
+
+
+def write_slowest_coro_info_to_file(coro_info: str, duration: float, slow_coro_report_filepath: Path):
+    text = f'Slow coroutine execution: {duration:.3f} seconds\n{coro_info}'
+    try:
+        slow_coro_report_filepath.write_text(text, encoding='utf-8')
+    except Exception as exc:
+        logger.exception(f'Exception while reading slow coro report: {exc.__class__.__name__}: {exc}')
