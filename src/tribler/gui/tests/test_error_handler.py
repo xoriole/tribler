@@ -5,7 +5,7 @@ import pytest
 from tribler.core.components.reporter.reported_error import ReportedError
 from tribler.core.sentry_reporter.sentry_reporter import SentryReporter, SentryStrategy
 from tribler.gui.error_handler import ErrorHandler
-from tribler.gui.exceptions import CoreConnectTimeoutError, CoreCrashedError
+from tribler.gui.exceptions import CoreCrashedError, CoreEventsEndpointTimeoutError
 
 
 # pylint: disable=redefined-outer-name, protected-access, function-redefined, unused-argument
@@ -56,8 +56,8 @@ def test_gui_info_type_in_handled_exceptions(mocked_feedback_dialog: MagicMock, 
 @patch.object(ErrorHandler, '_stop_tribler')
 def test_gui_core_connect_timeout_error(mocked_stop_tribler, mocked_feedback_dialog: MagicMock,
                                         error_handler: ErrorHandler):
-    # test that in case of CoreConnectTimeoutError Tribler should stop it's work
-    error_handler.gui_error(CoreConnectTimeoutError, None, None)
+    # test that in case of CoreEventsEndpointTimeoutError Tribler should stop its work
+    error_handler.gui_error(CoreEventsEndpointTimeoutError, None, None)
 
     mocked_feedback_dialog.assert_called_once()
     mocked_stop_tribler.assert_called_once()

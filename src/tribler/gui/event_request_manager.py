@@ -10,7 +10,7 @@ from tribler.core import notifications
 from tribler.core.components.reporter.reported_error import ReportedError
 from tribler.core.utilities.notifier import Notifier
 from tribler.gui import gui_sentry_reporter
-from tribler.gui.exceptions import CoreConnectTimeoutError, CoreConnectionError
+from tribler.gui.exceptions import CoreEventsEndpointTimeoutError
 from tribler.gui.utilities import connect, make_network_errors_dict
 
 received_events = []
@@ -147,7 +147,7 @@ class EventRequestManager(QNetworkAccessManager):
             if should_retry:
                 self.connect_timer.start(RECONNECT_INTERVAL_MS)  # Reschedule an attempt
             else:
-                raise CoreConnectTimeoutError(
+                raise CoreEventsEndpointTimeoutError(
                     f"Could not connect with the Tribler Core within {CORE_CONNECTION_TIMEOUT} seconds: "
                     f"{error_name} (code {error})"
                 )

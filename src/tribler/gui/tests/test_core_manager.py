@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tribler.gui.core_manager import CoreCrashedError, CoreManager
-from tribler.gui.exceptions import CoreConnectTimeoutError
+from tribler.gui.exceptions import CoreRestAPITimeoutError
 
 
 @pytest.fixture(name='core_manager')
@@ -83,7 +83,7 @@ def test_check_core_api_port_timeout(core_manager):
     # The timeout should be 30 seconds so let's pretend the core started 31 seconds before now
     core_manager.core_started_at = time.time() - 121
     core_manager.process_manager.current_process.get_core_process.return_value = None
-    with pytest.raises(CoreConnectTimeoutError, match="^Can't get Core API port value within 120 seconds$"):
+    with pytest.raises(CoreRestAPITimeoutError, match="^Can't get Core API port value within 120 seconds$"):
         core_manager.check_core_api_port()
 
 

@@ -17,7 +17,7 @@ from tribler.core.utilities.process_manager import ProcessManager
 from tribler.gui import gui_sentry_reporter
 from tribler.gui.app_manager import AppManager
 from tribler.gui.event_request_manager import EventRequestManager
-from tribler.gui.exceptions import CoreConnectTimeoutError, CoreCrashedError
+from tribler.gui.exceptions import CoreCrashedError, CoreRestAPITimeoutError
 from tribler.gui.network.request_manager import SHUTDOWN_ENDPOINT, request_manager
 from tribler.gui.utilities import connect, show_message_corrupted_database_was_fixed
 
@@ -173,7 +173,7 @@ class CoreManager(QObject):
             self.events_manager.connect_to_core(reschedule_on_err=True)
 
         elif time.time() - self.core_started_at > API_PORT_CHECK_TIMEOUT:
-            raise CoreConnectTimeoutError(f"Can't get Core API port value within {API_PORT_CHECK_TIMEOUT} seconds")
+            raise CoreRestAPITimeoutError(f"Can't get Core API port value within {API_PORT_CHECK_TIMEOUT} seconds")
         else:
             self.check_core_api_port_timer.start(API_PORT_CHECK_INTERVAL)
 
