@@ -106,7 +106,7 @@ def main():
 
         init_sentry_reporter(default_core_exception_handler.sentry_reporter)
 
-        slow_coro_stack_tracking = os.environ.get('SLOW_CORO_STACK_TRACING', '0' if is_frozen() else '1')
+        slow_coro_stack_tracking = os.environ.get('SLOW_CORO_STACK_TRACING', '1')
         # By default, the stack tracking of slow coroutines is enabled when running the Tribler from sources
         # and disabled in the compiled version, as it makes the Python code of Core work slower.
         if slow_coro_stack_tracking == '1':
