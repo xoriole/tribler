@@ -9,7 +9,7 @@ from tribler.core.utilities.slow_coro_detection.main_thread_stack_tracking impor
 
 
 def format_info(handle: Handle, include_stack: bool = False, stack_cut_duration: Optional[float] = None,
-                limit: Optional[int] = None, enable_profiling_tip: bool = True) -> str:
+                limit: Optional[int] = None, enable_profiling_tip: bool = False) -> str:
     """
     Returns the representation of a task executed by asyncio, with or without the stack.
     """
