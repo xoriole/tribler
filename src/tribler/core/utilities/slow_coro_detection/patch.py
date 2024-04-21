@@ -32,12 +32,12 @@ def patched_handle_run(self: Handle):
     """
     start_time = time.time()
     with lock:
-        current.handle, current.start_time = self, start_time
+        current.handle, current.start_time, current.coro_info = self, start_time, None
     try:
         _original_handle_run(self)
     finally:
         with lock:
-            current.handle = current.start_time = None
+            current.handle = current.start_time = current.coro_info = None
 
         duration = time.time() - start_time
         if duration > SLOW_CORO_DURATION_THRESHOLD:

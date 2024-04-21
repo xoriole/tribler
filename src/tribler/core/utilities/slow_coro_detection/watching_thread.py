@@ -23,6 +23,10 @@ class DebugInfo:
         self.handle: Optional[Handle] = None
         self.start_time: Optional[float] = None
 
+        self.coro_info: Optional[str] = None
+        self.slowest_coro_info: Optional[str] = None
+        self.slowest_coro_duration: float = 0.0
+
 
 current = DebugInfo()
 lock = Lock()
@@ -86,6 +90,18 @@ def _report_freeze(handle: Handle, duration: float, first_report: bool):
     # as displaying the entire stack can confuse the reader and mislead him regarding what function should be optimized
     stack_cut_duration = duration * 0.8
     info_str = format_info(handle, include_stack=True, stack_cut_duration=stack_cut_duration)
+    with lock:
+        current.coro_info = info_str
 
     logger.error(f"A slow coroutine step is {'still ' if not first_report else ''}occupying the loop "
                  f"for {duration:.3f} seconds already: {info_str}")
+    update_slowest_coro_info(duration)
+
+
+def update_slowest_coro_info(duration):
+    with lock:
+        if duration > current.slowest_coro_duration :
+            current.slowest_coro_duration = duration
+
+            if current.slowest_coro_info != current.coro_info:
+                current.slowest_coro_info = current.coro_info
