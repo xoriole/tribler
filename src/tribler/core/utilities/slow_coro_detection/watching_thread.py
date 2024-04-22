@@ -68,6 +68,8 @@ class SlowCoroWatchingThread(Thread):
         # Also, SlowCoroWatchingThread.run() displays the current main stack (as we are inside a running coroutine)
         # while patched_handle_run() does not display the stack (as the coroutine step is already finished).
 
+        self.remove_previous_slow_coro_report()
+
         prev_reported_handle = None  # to detect in the loop when we have the second report of the same slow coroutine
         while not self.stop_event.is_set():
             time.sleep(WATCHING_THREAD_INTERVAL)
@@ -82,6 +84,12 @@ class SlowCoroWatchingThread(Thread):
                                    slow_coro_report_filepath=self.slow_coro_report_filepath)
                     new_reported_handle = handle
             prev_reported_handle = new_reported_handle
+
+    def remove_previous_slow_coro_report(self):
+        try:
+            self.slow_coro_report_filepath.unlink(missing_ok=True)
+        except Exception as exc:
+            logger.exception(f'Exception while removing previous slow coro report: {exc.__class__.__name__}: {exc}')
 
     def stop(self):
         # We actually do not use it, as the thread is started as daemonic, that is, it runs till the very end
