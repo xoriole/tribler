@@ -10,6 +10,9 @@ IF NOT EXIST build\win (
   EXIT /b
 )
 
+REM temporary check for appveyor py version
+doskey python3=py
+
 REM locate Python directory and set up Python environment
 python3 -VV
 python3 build\win\locate-python.py > tmp_pythonhome.txt
