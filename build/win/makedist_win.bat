@@ -10,8 +10,19 @@ IF NOT EXIST build\win (
   EXIT /b
 )
 
-REM temporary check for appveyor py version
-doskey python3=py
+REM If there is a PYTHON environment variable, use it to run python3
+if defined PYTHON (
+    echo PYTHON environment variable is set to %PYTHON%
+
+    REM Create a python3.bat file to redirect python3 calls to the PYTHON variable path
+    echo @echo off > python3.bat
+    echo %PYTHON% %%* >> python3.bat
+
+    REM Optionally add the current directory to PATH to prioritize our new python3.bat
+    set PATH=%CD%;%PATH%
+
+    echo python3 command is now set to use the PYTHON environment variable.
+)
 
 REM locate Python directory and set up Python environment
 python3 -VV
