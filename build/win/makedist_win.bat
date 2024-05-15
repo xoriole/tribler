@@ -75,22 +75,10 @@ copy C:\build\openssl\*.dll dist\tribler\lib
 @echo Running NSIS
 cd dist\tribler
 
-REM get password for swarmplayerprivatekey.pfx
-set /p PASSWORD="Enter the PFX password:"
-
-REM Arno: Sign Tribler.exe so MS "Block / Unblock" dialog has publisher info.
-REM --- Doing this in ugly way for now
-if not defined SKIP_SIGNING_TRIBLER_BINARIES (
-    signtool.exe sign /f C:\build\certs\certificate.pfx /p "%PASSWORD%" /d "Tribler" /t "http://timestamp.digicert.com" tribler.exe
-)
 :makeinstaller
 %NSIS% tribler.nsi || exit /b
 move Tribler_*.exe ..
 cd ..
-REM Arno: Sign installer
-if not defined SKIP_SIGNING_TRIBLER_BINARIES (
-    signtool.exe sign /f c:\build\certs\certificate.pfx /p "%PASSWORD%" /d "Tribler" /t "http://timestamp.digicert.com" Tribler_*.exe
-)
 
 REM to neglect error code from the previous command we do exit 0
 exit 0
