@@ -11,6 +11,7 @@ IF NOT EXIST build\win (
 )
 
 REM locate Python directory and set up Python environment
+python3 -VV
 python3 build\win\locate-python.py > tmp_pythonhome.txt
 SET /p PYTHONHOME= < tmp_pythonhome.txt
 DEL /f /q tmp_pythonhome.txt
