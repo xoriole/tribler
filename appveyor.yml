@@ -7,17 +7,25 @@ environment:
   NSIS_INCLUDE: C:\Program Files (x86)\NSIS\Include
   BUILD_DIR: C:\build
   CACHE_DIR: C:\cache
+  PY_PYTHON: 3.9
+  PY_PYTHON3: 3.9
 
 cache:
   - C:\cache
 
 init:
   - cmd: mkdir %CACHE_DIR% 2>NUL
+    # Set Python 3.9 as the default Python version and adjust PATH
+  - cmd: set PY_PYTHON=3.9 && set PY_PYTHON3=3.9
+  - cmd: py -3.9 -m pip install --upgrade pip
+  - cmd: if not exist "%CACHE_DIR%" mkdir "%CACHE_DIR%"
+  - cmd: set PATH=C:\Python39;%PATH%
 
 build_script:
   - cmd: |
       cd C:\projects\tribler
       py -VV
+      
       git describe --tags | python -c "import sys; print(next(sys.stdin).lstrip('v'))" > .TriblerVersion
       git rev-parse HEAD > .TriblerCommit
       py ./build/update_version.py -r .
