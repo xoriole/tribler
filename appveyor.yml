@@ -37,7 +37,7 @@ install:
 before_build:
   - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
   - cmd: |
-      7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%\libsodium"
+      7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%"
       REM tree /f "%BUILD_DIR%\libsodium"
       dir "%BUILD_DIR%\libsodium"
       tree /f "%BUILD_DIR%\libsodium\x64"
