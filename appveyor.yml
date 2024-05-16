@@ -14,8 +14,8 @@ init:
   - cmd: mkdir %CACHE_DIR% 2>NUL
 
 install:
+  - cmd: if not exist "%CACHE_DIR%" mkdir "%CACHE_DIR%"
   - ps: |
-      if not exist "$env:CACHE_DIR" mkdir "$env:CACHE_DIR"
       $env:PATH = "$env:CACHE_DIR;$env:PATH"
       $files = @{
         "vc_redist.x64.exe" = "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe";
@@ -35,8 +35,8 @@ install:
       }
 
 before_build:
+  - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
   - cmd: |
-      if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
       7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%\libsodium"
       tree /f "%BUILD_DIR%\libsodium"
       tree /f "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\"
