@@ -39,13 +39,13 @@ before_build:
   - cmd: |
       7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%"
       REM tree /f "%BUILD_DIR%\libsodium"
-      dir "%BUILD_DIR%\libsodium"
-      tree /f "%BUILD_DIR%\libsodium\x64"
+      dir "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic"
+      REM tree /f "%BUILD_DIR%\libsodium\x64"
       if not exist "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic" (
         echo "libsodium.dll not found in BUILD_DIR"
       ) else (
         echo "libsodium.dll found in BUILD_DIR"
-        copy "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" C:\build\
+        copy "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
       )
 
   - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
