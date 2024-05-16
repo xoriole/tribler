@@ -1,5 +1,6 @@
 REM @echo off
 REM No LIBRARYNAME here as this is not distributed with Tribler as BaseLib
+ECHO Building Tribler installer for Windows
 
 if not defined LOG_LEVEL set LOG_LEVEL="DEBUG"
 
