@@ -22,4 +22,4 @@ build_script:
       git rev-parse HEAD > .TriblerCommit
       py ./build/update_version.py -r .
       py ./build/win/replace_nsi.py -r . --architecture x64
-  - cmd: ./build/win/makedist_win.bat
+  - cmd: .\build\win\makedist_win.bat
