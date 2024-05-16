@@ -37,8 +37,8 @@ install:
 before_build:
   - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
   - cmd: |
-      7z x "%CACHE_DIR%\libsodium.zip" -olibsodium
-      copy ".\libsodium\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
+      7z x "%CACHE_DIR%\libsodium.zip" -o.
+      copy ".\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
 
   - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
   - cmd: move ".\NsProcess\Plugin\nsProcessW.dll" "%NSIS_PLUGINS%\x86-unicode\nsProcess.dll"
@@ -49,7 +49,7 @@ before_build:
   - cmd: move ".\AccessControl\Plugins\i386-unicode\*" "%NSIS_PLUGINS%\x86-unicode"
   - cmd: move ".\AccessControl\Plugins\i386-ansi\*" "%NSIS_PLUGINS%\x86-ansi"
 
-  - cmd: 7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -oSFP
+  - cmd: 7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -o.
   - cmd: move ".\SFP\SimpleFC.dll" "%NSIS_PLUGINS%\x86-unicode"
 
 
