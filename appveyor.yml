@@ -38,7 +38,7 @@ before_build:
   - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
   - cmd: |
       7z x "%CACHE_DIR%\libsodium.zip" -olibsodium
-      copy ".\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
+      copy ".\libsodium\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
 
   - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
   - cmd: move ".\NsProcess\Plugin\nsProcessW.dll" "%NSIS_PLUGINS%\x86-unicode\nsProcess.dll"
