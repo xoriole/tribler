@@ -1,5 +1,6 @@
 version: 1.0.{build}
 image: Visual Studio 2019
+clone_folder: c:\projects\tribler
 
 environment:
   NSIS_PLUGINS: C:\Program Files (x86)\NSIS\Plugins
