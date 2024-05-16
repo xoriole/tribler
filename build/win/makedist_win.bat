@@ -14,6 +14,8 @@ IF NOT EXIST build\win (
   ECHO Building Tribler installer for Windows; build\win exists
 )
 
+SET PATH=%PYTHON%;%PATH%
+
 REM locate Python directory and set up Python environment
 python3 -VV
 python3 build\win\locate-python.py > tmp_pythonhome.txt
