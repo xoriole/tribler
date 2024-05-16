@@ -7,8 +7,9 @@ environment:
   NSIS_INCLUDE: C:\Program Files (x86)\NSIS\Include
   BUILD_DIR: C:\build
   CACHE_DIR: C:\cache
-  PY_PYTHON: 3.9
-  PY_PYTHON3: 3.9
+  SENTRY_URL: https://26d22e0fd6d14095b7eb496dccae6c79@sentry.tribler.org/7
+  matrix:
+    - PYTHON: C:\Python39-x64
 
 cache:
   - C:\cache
@@ -30,4 +31,5 @@ build_script:
       git rev-parse HEAD > .TriblerCommit
       py ./build/update_version.py -r .
       py ./build/win/replace_nsi.py -r . --architecture x64
+      SET PATH=%PYTHON%;%PATH%
   - cmd: .\build\win\makedist_win.bat
