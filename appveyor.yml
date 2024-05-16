@@ -37,16 +37,8 @@ install:
 before_build:
   - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
   - cmd: |
-      7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%"
-      REM tree /f "%BUILD_DIR%\libsodium"
-      dir "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic"
-      REM tree /f "%BUILD_DIR%\libsodium\x64"
-      if not exist "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic" (
-        echo "libsodium.dll not found in BUILD_DIR"
-      ) else (
-        echo "libsodium.dll found in BUILD_DIR"
-        copy "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
-      )
+      7z x "%CACHE_DIR%\libsodium.zip" -olibsodium
+      copy ".\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
 
   - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
   - cmd: move ".\NsProcess\Plugin\nsProcessW.dll" "%NSIS_PLUGINS%\x86-unicode\nsProcess.dll"
