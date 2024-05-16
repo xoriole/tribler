@@ -4,6 +4,7 @@ image: Visual Studio 2019
 environment:
   NSIS_PLUGINS: C:\Program Files (x86)\NSIS\Plugins
   NSIS_INCLUDE: C:\Program Files (x86)\NSIS\Include
+  BUILD_DIR: C:\build
   CACHE_DIR: C:\build\cache
 
 cache:
@@ -34,14 +35,14 @@ install:
 
 before_build:
   - cmd: |
-      7z x "%CACHE_DIR%\libsodium.zip" -o"%CACHE_DIR%\libsodium"
-      dir "%CACHE_DIR%\libsodium"
-      tree /f "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\"
-      if not exist "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\" (
-        echo "libsodium.dll not found in CACHE_DIR"
+      7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%\libsodium"
+      dir "%BUILD_DIR%\libsodium"
+      tree /f "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\"
+      if not exist "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\" (
+        echo "libsodium.dll not found in BUILD_DIR"
       ) else (
-        echo "libsodium.dll found in CACHE_DIR"
-        copy "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" C:\build\
+        echo "libsodium.dll found in BUILD_DIR"
+        copy "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" C:\build\
       )
 
   - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
