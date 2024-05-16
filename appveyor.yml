@@ -38,8 +38,9 @@ before_build:
   - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
   - cmd: |
       7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%\libsodium"
-      tree /f "%BUILD_DIR%\libsodium"
-      tree /f "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\"
+      REM tree /f "%BUILD_DIR%\libsodium"
+      dir "%BUILD_DIR%\libsodium"
+      tree /f "%BUILD_DIR%\libsodium\x64"
       if not exist "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic" (
         echo "libsodium.dll not found in BUILD_DIR"
       ) else (
