@@ -33,9 +33,14 @@ install:
       }
 
 before_build:
-  - cmd: 7z x "%CACHE_DIR%\libsodium.zip" -o"%CACHE_DIR%\libsodium"
-  - cmd: tree /f "%CACHE_DIR%\libsodium"
-  - cmd: copy "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" C:\build\
+  - cmd: |
+      7z x "%CACHE_DIR%\libsodium.zip" -o"%CACHE_DIR%\libsodium"
+      dir "%CACHE_DIR%\libsodium"
+      if not exist "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" (
+        echo "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll not found"
+        exit 1
+      )
+      copy "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" C:\build\
 
   - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
   - cmd: move ".\NsProcess\Plugin\nsProcessW.dll" "%NSIS_PLUGINS%\x86-unicode\nsProcess.dll"
