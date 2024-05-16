@@ -9,15 +9,18 @@ IF NOT EXIST build\win (
   ECHO .
   ECHO Please, execute this script from the repository root
   EXIT /b
+) ELSE (
+  ECHO .
+  ECHO Building Tribler installer for Windows; build\win exists
 )
 
 REM If there is a PYTHON environment variable, use it to run python3
-if defined PYTHON (
-    echo PYTHON environment variable is set to %PYTHON%
+if defined "%PYTHON%" (
+    echo "PYTHON environment variable is set to %PYTHON%"
 
     REM Create a python3.bat file to redirect python3 calls to the PYTHON variable path
     echo @echo off > python3.bat
-    echo %PYTHON% %%* >> python3.bat
+    echo "%PYTHON%" %%* >> python3.bat
 
     REM Optionally add the current directory to PATH to prioritize our new python3.bat
     set PATH=%CD%;%PATH%
