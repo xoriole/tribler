@@ -33,19 +33,20 @@ install:
       }
 
 before_build:
-  - cmd: 7z x "%CACHE_DIR%\libsodium.zip" -o "%CACHE_DIR%\libsodium"
+  - cmd: 7z x "%CACHE_DIR%\libsodium.zip" -o"%CACHE_DIR%\libsodium"
+  - cmd: tree /f "%CACHE_DIR%\libsodium"
   - cmd: copy "%CACHE_DIR%\libsodium\x64\Release\v142\dynamic\libsodium.dll" C:\build\
 
-  - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -o NsProcess
+  - cmd: 7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
   - cmd: move ".\NsProcess\Plugin\nsProcessW.dll" "%NSIS_PLUGINS%\x86-unicode\nsProcess.dll"
   - cmd: move ".\NsProcess\Plugin\nsProcess.dll" "%NSIS_PLUGINS%\x86-ansi\nsProcess.dll"
   - cmd: move ".\NsProcess\Include\*" "%NSIS_INCLUDE%"
 
-  - cmd: 7z x "%CACHE_DIR%\AccessControl.zip" -o AccessControl
+  - cmd: 7z x "%CACHE_DIR%\AccessControl.zip" -oAccessControl
   - cmd: move ".\AccessControl\Plugins\i386-unicode\*" "%NSIS_PLUGINS%\x86-unicode"
   - cmd: move ".\AccessControl\Plugins\i386-ansi\*" "%NSIS_PLUGINS%\x86-ansi"
 
-  - cmd: 7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -o SFP
+  - cmd: 7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -oSFP
   - cmd: move ".\SFP\SimpleFC.dll" "%NSIS_PLUGINS%\x86-unicode"
 
 
