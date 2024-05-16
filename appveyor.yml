@@ -17,10 +17,10 @@ cache:
 init:
   - cmd: mkdir %CACHE_DIR% 2>NUL
     # Set Python 3.9 as the default Python version and adjust PATH
-  - cmd: set PY_PYTHON=3.9 && set PY_PYTHON3=3.9
-  - cmd: py -3.9 -m pip install --upgrade pip
-  - cmd: if not exist "%CACHE_DIR%" mkdir "%CACHE_DIR%"
-  - cmd: set PATH=C:\Python39;%PATH%
+#  - cmd: set PY_PYTHON=3.9 && set PY_PYTHON3=3.9
+#  - cmd: py -3.9 -m pip install --upgrade pip
+#  - cmd: if not exist "%CACHE_DIR%" mkdir "%CACHE_DIR%"
+#  - cmd: set PATH=C:\Python39;%PATH%
 
 build_script:
   - cmd: |
