@@ -38,7 +38,7 @@ before_build:
       7z x "%CACHE_DIR%\libsodium.zip" -o"%BUILD_DIR%\libsodium"
       tree /f "%BUILD_DIR%\libsodium"
       tree /f "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\"
-      if not exist "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic\" (
+      if not exist "%BUILD_DIR%\libsodium\x64\Release\v142\dynamic" (
         echo "libsodium.dll not found in BUILD_DIR"
       ) else (
         echo "libsodium.dll found in BUILD_DIR"
