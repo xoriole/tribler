@@ -1,0 +1,67 @@
+version: 1.0.{build}
+image: Visual Studio 2019
+clone_folder: c:\projects\tribler
+
+environment:
+  NSIS_PLUGINS: C:\Program Files (x86)\NSIS\Plugins
+  NSIS_INCLUDE: C:\Program Files (x86)\NSIS\Include
+  BUILD_DIR: C:\build
+  CACHE_DIR: C:\cache
+
+cache:
+  - C:\cache
+
+init:
+  - cmd: mkdir %CACHE_DIR% 2>NUL
+
+install:
+  - cmd: if not exist "%CACHE_DIR%" mkdir "%CACHE_DIR%"
+  - ps: |
+      $env:PATH = "$env:CACHE_DIR;$env:PATH"
+      $files = @{
+        "vc_redist.x64.exe" = "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe";
+        "libsodium.zip" = "https://download.libsodium.org/libsodium/releases/libsodium-1.0.19-msvc.zip";
+        "NsProcess.zip" = "https://nsis.sourceforge.io/mediawiki/images/1/18/NsProcess.zip";
+        "AccessControl.zip" = "https://nsis.sourceforge.io/mediawiki/images/4/4a/AccessControl.zip";
+        "NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" = "https://nsis.sourceforge.io/mediawiki/images/e/e0/NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip"
+      }
+      foreach ($file in $files.Keys) {
+        $localPath = Join-Path $env:CACHE_DIR $file
+        if (!(Test-Path $localPath)) {
+          Write-Host "Downloading $file..."
+          Invoke-WebRequest $files[$file] -OutFile $localPath
+        } else {
+          Write-Host "$file already in cache."
+        }
+      }
+
+before_build:
+  - cmd: if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+  - cmd: |
+      7z x "%CACHE_DIR%\libsodium.zip" -o.
+      copy ".\libsodium\x64\Release\v142\dynamic\libsodium.dll" "%BUILD_DIR%"
+
+  - cmd: | 
+      7z x "%CACHE_DIR%\NsProcess.zip" -oNsProcess
+      move ".\NsProcess\Plugin\nsProcessW.dll" "%NSIS_PLUGINS%\x86-unicode\nsProcess.dll"
+      move ".\NsProcess\Plugin\nsProcess.dll" "%NSIS_PLUGINS%\x86-ansi\nsProcess.dll"
+      move ".\NsProcess\Include\*" "%NSIS_INCLUDE%"
+
+      7z x "%CACHE_DIR%\AccessControl.zip" -oAccessControl
+      move ".\AccessControl\Plugins\i386-unicode\*" "%NSIS_PLUGINS%\x86-unicode"
+      move ".\AccessControl\Plugins\i386-ansi\*" "%NSIS_PLUGINS%\x86-ansi"
+      
+      7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -oSFP
+      move ".\SFP\SimpleFC.dll" "%NSIS_PLUGINS%\x86-unicode"
+
+
+build_script:
+  - cmd: |
+      cd C:\projects\tribler
+      py -VV
+      git describe --tags | python -c "import sys; print(next(sys.stdin).lstrip('v'))" > .TriblerVersion
+      git rev-parse HEAD > .TriblerCommit
+      py ./build/update_version.py -r .
+      py ./build/win/replace_nsi.py -r . --architecture x64
+  - ps: |
+      & ".\build\win\makedist_win.bat"
