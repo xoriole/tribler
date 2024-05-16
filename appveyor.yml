@@ -49,7 +49,8 @@ before_build:
   - cmd: move ".\AccessControl\Plugins\i386-unicode\*" "%NSIS_PLUGINS%\x86-unicode"
   - cmd: move ".\AccessControl\Plugins\i386-ansi\*" "%NSIS_PLUGINS%\x86-ansi"
 
-  - cmd: 7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -o.
+  - cmd: 7z x "%CACHE_DIR%\NSIS_Simple_Firewall_Plugin_Unicode_1.21.zip" -oSFP
+  - cmd: tree /f SFP
   - cmd: move ".\SFP\SimpleFC.dll" "%NSIS_PLUGINS%\x86-unicode"
 
 
