@@ -42,11 +42,11 @@ IF NOT EXIST %NSIS% (
 )
 
 REM ----- Clean up
-
+ECHO Cleaning up
 call build\win\clean.bat
 
 REM ----- Prepare venv & install dependencies before the build
-
+ECHO Preparing venv & installing dependencies
 python -m venv build-env
 ./build-env/Scripts/activate.bat
 python -m pip install --upgrade pip
