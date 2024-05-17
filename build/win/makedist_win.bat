@@ -46,7 +46,7 @@ ECHO Cleaning up
 call build\win\clean.bat
 
 REM ----- Prepare venv & install dependencies before the build
-ECHO Preparing venv & installing dependencies
+ECHO Preparing venv and installing dependencies
 python -m venv build-env
 ./build-env/Scripts/activate.bat
 python -m pip install --upgrade pip
