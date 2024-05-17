@@ -19,16 +19,7 @@ ECHO PATH SET TO %PATH%
 DIR %PYTHON%
 
 REM Define the Python executable based on the PYTHON environment variable
-if defined PYTHON (
-    set "PYTHON_EXEC=%PYTHON%\python.exe"
-) else (
-    set "PYTHON_EXEC=python"
-)
-
-REM Define a custom command 'mypython' as a subroutine
-:python3
-%PYTHON_EXEC% %*
-goto :eof
+doskey python3=%PYTHON%\python.exe $*
 
 REM locate Python directory and set up Python environment
 python3 -VV
