@@ -8,9 +8,8 @@ environment:
   BUILD_DIR: C:\build
   CACHE_DIR: C:\cache
   SENTRY_URL: https://26d22e0fd6d14095b7eb496dccae6c79@sentry.tribler.org/7
-  matrix:
-    - PYTHON: C:\Python39-x64
-    - PYTHON_EXE: C:\Python310-x64\python.exe
+  PYTHON: C:\Python39-x64
+  PYTHON_EXE: C:\Python310-x64\python.exe
 
 cache:
   - C:\cache
