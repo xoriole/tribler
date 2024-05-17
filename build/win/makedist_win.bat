@@ -15,6 +15,7 @@ IF NOT EXIST build\win (
 )
 
 SET PATH=%PYTHON%;%PATH%
+ECHO PATH SET TO %PATH%
 
 REM locate Python directory and set up Python environment
 python3 -VV
