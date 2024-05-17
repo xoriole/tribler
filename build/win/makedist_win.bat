@@ -22,7 +22,7 @@ REM Define the Python executable based on the PYTHON environment variable
 doskey python3=%PYTHON%\python.exe $*
 
 REM locate Python directory and set up Python environment
-python3 -VV
+python -VV
 REM python3 build\win\locate-python.py > tmp_pythonhome.txt
 REM SET /p PYTHONHOME= < tmp_pythonhome.txt
 REM DEL /f /q tmp_pythonhome.txt
@@ -47,10 +47,10 @@ call build\win\clean.bat
 
 REM ----- Prepare venv & install dependencies before the build
 
-python3 -m venv build-env
+python -m venv build-env
 ./build-env/Scripts/activate.bat
-python3 -m pip install --upgrade pip
-python3 -m pip install --upgrade -r requirements-build.txt
+python -m pip install --upgrade pip
+python -m pip install --upgrade -r requirements-build.txt
 
 REM ----- Build
 
@@ -58,12 +58,12 @@ REM Arno: When adding files here, make sure tribler.nsi actually
 REM packs them in the installer .EXE
 
 ECHO Install pip dependencies for correct py-installer's work
-python3 -m pip install --upgrade -r build\win\requirements.txt
+python -m pip install --upgrade -r build\win\requirements.txt
 
 REM Sandip 2024-03-22: Deprecated, we are not using PyInstaller anymore because of issue with False Malware detections.
 REM %PYTHONHOME%\Scripts\pyinstaller.exe tribler.spec --log-level=%LOG_LEVEL% || exit /b
 ECHO Building Tribler using Cx_Freeze
-python3 setup.py build
+python setup.py build
 
 copy build\win\resources\tribler*.nsi dist\tribler
 
