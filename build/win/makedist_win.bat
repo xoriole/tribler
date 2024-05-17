@@ -14,8 +14,8 @@ IF NOT EXIST build\win (
   ECHO Building Tribler installer for Windows; build\win exists
 )
 
-SET PATH=%PYTHON%;%PATH%
 ECHO PATH SET TO %PATH%
+DIR %PYTHON%
 
 REM locate Python directory and set up Python environment
 python3 -VV
