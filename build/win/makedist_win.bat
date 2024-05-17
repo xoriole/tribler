@@ -1,4 +1,5 @@
 REM @echo off
+setlocal
 REM No LIBRARYNAME here as this is not distributed with Tribler as BaseLib
 ECHO Building Tribler installer for Windows
 
@@ -17,13 +18,25 @@ IF NOT EXIST build\win (
 ECHO PATH SET TO %PATH%
 DIR %PYTHON%
 
+REM Define the Python executable based on the PYTHON environment variable
+if defined PYTHON (
+    set "PYTHON_EXEC=%PYTHON%\python.exe"
+) else (
+    set "PYTHON_EXEC=python"
+)
+
+REM Define a custom command 'mypython' as a subroutine
+:python3
+%PYTHON_EXEC% %*
+goto :eof
+
 REM locate Python directory and set up Python environment
 python3 -VV
-python3 build\win\locate-python.py > tmp_pythonhome.txt
-SET /p PYTHONHOME= < tmp_pythonhome.txt
-DEL /f /q tmp_pythonhome.txt
+REM python3 build\win\locate-python.py > tmp_pythonhome.txt
+REM SET /p PYTHONHOME= < tmp_pythonhome.txt
+REM DEL /f /q tmp_pythonhome.txt
 REM Arno: Add . to find our core
-SET PYTHONPATH=.;%PYTHONHOME%
+SET PYTHONPATH=.;%PYTHON%
 ECHO PYTHONPATH SET TO %PYTHONPATH%
 
 REM ----- Check for NSIS installer
