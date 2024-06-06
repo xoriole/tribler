@@ -78,7 +78,7 @@ class ErrorHandler:
             'tribler_stopped': self._tribler_core_stopped
         }
 
-        FeedbackDialog(
+        FeedbackDialog.report(
             parent=self.tribler_window,
             sentry_reporter=gui_sentry_reporter,
             reported_error=reported_error,

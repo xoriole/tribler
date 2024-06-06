@@ -118,6 +118,10 @@ class CoreManager(QObject):
             self.start_tribler_core()
 
     def start_tribler_core(self):
+        if self.core_restarted_frequently():
+            self._logger.error("Core restarted too frequently; stopping Tribler")
+            raise CoreCrashedError("Core restarted too frequently; stopping Tribler")
+
         # reset the status flags
         self.use_existing_core = False
         self.is_restarting = False

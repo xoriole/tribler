@@ -8,6 +8,7 @@ import time
 from typing import Any, Optional, TYPE_CHECKING
 
 from PyQt5 import uic
+from PyQt5.QtGui import QShowEvent, QCloseEvent
 from PyQt5.QtWidgets import QAction, QDialog, QMessageBox
 
 from tribler.core.components.reporter.reported_error import ReportedError
@@ -70,6 +71,8 @@ def dump_with_name(name: str, value: Optional[str | dict], start: str = '\n\n', 
 
 
 class FeedbackDialog(AddBreadcrumbOnShowMixin, QDialog):
+    ACTIVE_DIALOGS: dict = {}
+
     def __init__(  # pylint: disable=too-many-arguments, too-many-locals
             self,
             parent: TriblerWindow,
@@ -143,6 +146,43 @@ class FeedbackDialog(AddBreadcrumbOnShowMixin, QDialog):
 
         connect(self.cancel_button.clicked, self.on_cancel_clicked)
         connect(self.send_report_button.clicked, self.on_send_clicked)
+
+    def closeEvent(self, event: QCloseEvent):
+        super().closeEvent(event)
+        report_id = self.get_report_id(self.reported_error)
+        if report_id in self.ACTIVE_DIALOGS:
+            del self.ACTIVE_DIALOGS[report_id]
+
+    @classmethod
+    def get_report_id(cls, reported_error: ReportedError):
+        return hash(reported_error.type + reported_error.text)
+
+    @classmethod
+    def report(
+            cls,
+            parent: TriblerWindow,
+            sentry_reporter: SentryReporter,
+            reported_error: ReportedError,
+            tribler_version,
+            start_time,
+            additional_tags=None,
+    ):
+        report_id = cls.get_report_id(reported_error)
+        if cls.ACTIVE_DIALOGS.get(report_id):
+            existing = cls.ACTIVE_DIALOGS[report_id]
+            existing.reported_error.num_instances += 1
+            return existing
+
+        feedback_dialog = FeedbackDialog(
+            parent=parent,
+            sentry_reporter=sentry_reporter,
+            reported_error=reported_error,
+            tribler_version=tribler_version,
+            start_time=start_time,
+            additional_tags=additional_tags
+        )
+        cls.ACTIVE_DIALOGS[report_id] = feedback_dialog
+        return feedback_dialog
 
     def on_remove_entry(self, index):
         self.env_variables_list.takeTopLevelItem(index)

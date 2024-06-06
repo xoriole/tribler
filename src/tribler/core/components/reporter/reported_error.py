@@ -22,6 +22,7 @@ class ReportedError:
     context: str = field(default='', repr=False)
     last_core_output: str = field(default='', repr=False)
     should_stop: Optional[bool] = field(default=None)
+    num_instances: int = field(default=1)
 
     def get_filename(self) -> str:
         """
