@@ -7,6 +7,6 @@ PyInstaller==6.6.0;  sys_platform == 'darwin'
 PyInstaller==5.13.1; sys_platform == 'linux2' or sys_platform == 'linux'
 defusedxml==0.7.1; sys_platform == 'linux2' or sys_platform == 'linux'
 markupsafe==2.0.1; sys_platform == 'linux2' or sys_platform == 'linux'
-PyGObject==3.48.2; sys_platform == 'linux2' or sys_platform == 'linux'
+PyGObject==3.44.2; sys_platform == 'linux2' or sys_platform == 'linux'
 
 requests==2.31.0
