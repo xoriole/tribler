@@ -23,7 +23,11 @@ cd ./build/debian/tribler
 
 export DEBEMAIL="info@tribler.org"
 export DEBFULLNAME="Tribler"
-dch -v $GITHUB_TAG "New release"
-dch -v $GITHUB_TAG "See https://github.com/Tribler/tribler/releases/tag/$GITHUB_TAG for more info"
+
+version=$GITHUB_TAG
+version=${version,,} # lowercase
+version=${version#v} # remove the v prefix if exists
+dch -v $version "New release"
+dch -v $version "See https://github.com/Tribler/tribler/releases/tag/$GITHUB_TAG for more info"
 
 dpkg-buildpackage -b -rfakeroot -us -uc
